@@ -1,0 +1,2859 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Кабинет репетитора</title>
+<style>
+  :root{
+    --bg:#12212b;
+    --bg-panel:#1b323e;
+    --bg-panel-2:#213c49;
+    --paper:#f5f0e4;
+    --paper-2:#ece4d2;
+    --ink:#eae6da;
+    --ink-dim:#a9b8bd;
+    --accent:#e0a94c;
+    --accent-dim:#8a6a2c;
+    --red:#c0533e;
+    --green:#6fa98a;
+    --border:rgba(234,230,220,0.14);
+    --radius:10px;
+    --serif:Georgia,'Times New Roman',serif;
+    --sans:'Segoe UI',system-ui,-apple-system,Helvetica,Arial,sans-serif;
+    --mono:'Consolas','SFMono-Regular',Menlo,monospace;
+  }
+  [data-theme="light"]{
+    --bg:#f3efe4;
+    --bg-panel:#ffffff;
+    --bg-panel-2:#f2ede0;
+    --paper:#ffffff;
+    --paper-2:#f0ece1;
+    --ink:#20241f;
+    --ink-dim:#5c6660;
+    --accent:#b9822f;
+    --accent-dim:#8a6a2c;
+    --red:#a83f2e;
+    --green:#3f7d5c;
+    --border:rgba(20,20,20,0.12);
+  }
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;}
+
+  /* ---------- DASHBOARD SIDEBAR LAYOUT ---------- */
+  .dash-layout{display:flex;gap:26px;align-items:flex-start;}
+  .dash-sidebar{width:200px;flex-shrink:0;display:flex;flex-direction:column;gap:3px;
+    background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:10px;position:sticky;top:20px;}
+  .dash-nav-item{display:block;width:100%;text-align:left;background:none;border:none;color:var(--ink-dim);
+    padding:11px 14px;border-radius:8px;cursor:pointer;font-size:13.5px;font-family:var(--sans);}
+  .dash-nav-item:hover{background:var(--bg);color:var(--ink);}
+  .dash-nav-item.active{background:var(--accent);color:#1c1305;font-weight:700;}
+  .dash-content{flex:1;min-width:0;}
+  .breadcrumb{font-size:12px;color:var(--ink-dim);margin-bottom:12px;}
+  .breadcrumb span{margin:0 4px;}
+  .dash-title{font-family:var(--serif);font-size:24px;margin:0 0 4px;}
+  .dash-subtitle{color:var(--ink-dim);font-size:13.5px;margin:0 0 22px;}
+
+  .create-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:22px;align-items:start;}
+  .step-card{display:flex;gap:14px;background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;}
+  .step-card-icon{width:44px;height:44px;border-radius:50%;background:rgba(224,169,76,0.15);
+    display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+  .step-card-body{flex:1;}
+  .step-card-body label{display:block;font-weight:700;font-size:13.5px;margin:0 0 2px;color:var(--ink);}
+  .step-card-body .step-hint{font-size:11.5px;color:var(--ink-dim);margin:0 0 8px;}
+  .step-card-body select, .step-card-body input{width:100%;}
+
+  .info-row{display:flex;background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;
+    padding:14px 6px;margin:0 0 14px;gap:6px;min-height:20px;}
+  .info-row .info-item{flex:1;text-align:center;}
+  .info-row .info-item b{display:block;font-family:var(--serif);font-size:15px;color:var(--accent);}
+  .info-row .info-item span{font-size:10px;color:var(--ink-dim);}
+
+  .create-summary{background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;
+    padding:20px;position:sticky;top:20px;}
+  .create-summary h4{font-family:var(--serif);margin:0 0 12px;font-size:15px;}
+  .summary-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);}
+  .summary-row:last-child{border-bottom:none;}
+  .summary-row .si{font-size:16px;}
+  .summary-row .sl{font-size:10.5px;color:var(--ink-dim);display:block;}
+  .summary-row .sv{font-size:13px;font-weight:600;}
+  .summary-note{margin-top:14px;font-size:12px;color:var(--green);background:rgba(111,169,138,0.12);
+    border:1px solid var(--green);border-radius:8px;padding:10px;}
+
+  @media (max-width:760px){
+    .dash-layout{flex-direction:column;}
+    .dash-sidebar{width:100%;flex-direction:row;overflow-x:auto;position:static;}
+    .create-grid{grid-template-columns:1fr;}
+    .create-summary{position:static;}
+  }
+  .stat-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;}
+  .stat-card .stat-num{font-family:var(--serif);font-size:28px;color:var(--accent);}
+  .stat-card .stat-label{font-size:12px;color:var(--ink-dim);margin-top:4px;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 10%, rgba(224,169,76,0.06), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(111,169,138,0.06), transparent 45%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    min-height:100vh;
+  }
+  .shell{max-width:980px;margin:0 auto;padding:28px 20px 60px;}
+  header.site-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:28px;}
+  header.site-head h1{font-family:var(--serif);font-weight:700;font-size:28px;margin:0;letter-spacing:0.3px;}
+  header.site-head h1 span{color:var(--accent);}
+  header.site-head .tag{color:var(--ink-dim);font-size:13px;}
+  .chalk-rule{border:none;border-top:2px dashed var(--border);margin:18px 0;}
+
+  /* Role select */
+  .roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:10px;}
+  .role-card{
+    background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:26px 20px;cursor:pointer;transition:transform .15s ease, border-color .15s ease, background .15s ease;
+    text-align:left;
+  }
+  .role-card:hover{transform:translateY(-3px);border-color:var(--accent-dim);background:var(--bg-panel-2);}
+  .role-card.active{border-color:var(--accent);background:var(--bg-panel-2);}
+  .role-card .icon{font-size:30px;margin-bottom:10px;display:block;}
+  .role-card h3{font-family:var(--serif);margin:0 0 6px;font-size:19px;}
+  .role-card p{margin:0;color:var(--ink-dim);font-size:13.5px;line-height:1.5;}
+
+  /* Tabs */
+  .tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
+  .tab-btn{
+    background:transparent;border:1px solid var(--border);color:var(--ink-dim);
+    padding:9px 16px;border-radius:999px;cursor:pointer;font-size:13.5px;font-family:var(--sans);
+    transition:all .15s ease;
+  }
+  .tab-btn:hover{color:var(--ink);border-color:var(--accent-dim);}
+  .tab-btn.active{background:var(--accent);color:#1b1204;border-color:var(--accent);font-weight:600;}
+
+  .back-link{background:none;border:none;color:var(--ink-dim);cursor:pointer;font-size:13px;padding:0;margin-bottom:16px;display:inline-flex;align-items:center;gap:6px;}
+  .back-link:hover{color:var(--accent);}
+
+  .panel{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+  .panel h2{font-family:var(--serif);margin-top:0;font-size:20px;}
+  .panel h2 .num{color:var(--accent);font-family:var(--mono);font-size:15px;margin-right:8px;}
+
+  label{display:block;font-size:12.5px;color:var(--ink-dim);margin:14px 0 6px;text-transform:uppercase;letter-spacing:0.05em;}
+  select, input[type=text], input[type=password]{
+    width:100%;background:var(--bg);border:1px solid var(--border);color:var(--ink);
+    padding:11px 12px;border-radius:7px;font-size:14.5px;font-family:var(--sans);
+  }
+  select:focus,input:focus{outline:none;border-color:var(--accent);}
+
+  button.primary{
+    margin-top:20px;background:var(--accent);color:#1c1305;border:none;padding:12px 22px;
+    border-radius:7px;font-size:14.5px;font-weight:700;cursor:pointer;letter-spacing:0.02em;
+    font-family:var(--sans);
+  }
+  button.primary:hover{filter:brightness(1.08);}
+  button.secondary{
+    background:transparent;border:1px solid var(--border);color:var(--ink);
+    padding:10px 18px;border-radius:7px;cursor:pointer;font-size:13.5px;font-family:var(--sans);
+  }
+  button.secondary:hover{border-color:var(--accent-dim);}
+  button.small{padding:6px 12px;font-size:12.5px;border-radius:6px;}
+
+  .code-reveal{
+    margin-top:22px;padding:20px;background:var(--paper);color:#1b1204;border-radius:8px;
+    border:1px dashed var(--accent-dim);text-align:center;
+  }
+  .code-reveal .code{font-family:var(--mono);font-size:32px;font-weight:700;letter-spacing:6px;margin:8px 0;color:#1b1204;}
+  .code-reveal .meta{font-size:13px;color:#5b4b2a;}
+
+  table{width:100%;border-collapse:collapse;margin-top:6px;font-size:13.5px;}
+  th,td{padding:10px 8px;text-align:left;border-bottom:1px solid var(--border);}
+  th{color:var(--ink-dim);font-weight:600;text-transform:uppercase;font-size:11.5px;letter-spacing:0.04em;}
+  tr.expand-row td{background:rgba(0,0,0,0.15);}
+  .status-pill{padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;display:inline-block;}
+  .status-pending{background:rgba(224,169,76,0.15);color:var(--accent);}
+  .status-done{background:rgba(111,169,138,0.18);color:var(--green);}
+  .score-good{color:var(--green);font-weight:700;}
+  .score-bad{color:var(--red);font-weight:700;}
+  .row-toggle{cursor:pointer;}
+  .row-toggle:hover{background:rgba(255,255,255,0.03);}
+  .detail-q{margin:4px 0;padding:8px 10px;border-radius:6px;font-size:13px;}
+  .detail-ok{background:rgba(111,169,138,0.1);border-left:3px solid var(--green);}
+  .detail-bad{background:rgba(192,83,62,0.1);border-left:3px solid var(--red);}
+  .empty-note{color:var(--ink-dim);font-size:13.5px;padding:20px 0;text-align:center;}
+
+  /* Student test */
+  .q-block{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:14px;}
+
+  /* ---------- SECTIONS (admin builder) ---------- */
+  .admin-section-block{background:var(--bg-panel);border:1px solid var(--accent-dim);border-radius:10px;padding:16px;margin-bottom:18px;}
+  .section-block-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .section-type-badge{background:var(--accent);color:#1c1305;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;}
+  .section-block-head input.sectionTitleInput{flex:1;margin:0;}
+  .section-block-head button{white-space:nowrap;}
+
+  /* ---------- SECTIONS (student picker) ---------- */
+  .section-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:16px 0 22px;}
+  .section-card{background:var(--bg);border:2px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;
+    transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;}
+  .section-card:hover{transform:translateY(-3px);box-shadow:0 8px 18px rgba(0,0,0,0.18);}
+  .section-card.selected{border-color:var(--accent);background:var(--bg-panel-2);}
+  .section-card .sc-icon{font-size:24px;margin-bottom:8px;}
+  .section-card .sc-title{font-family:var(--serif);font-size:15px;margin-bottom:4px;}
+  .section-card .sc-desc{font-size:11.5px;color:var(--ink-dim);}
+  .section-all-toggle{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:13.5px;}
+
+  /* ---------- READING SECTION ---------- */
+  .reading-layout{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;}
+  .reading-text-panel{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:18px;
+    max-height:520px;overflow-y:auto;line-height:1.7;font-size:14.5px;white-space:pre-wrap;}
+  @media (max-width:760px){ .reading-layout{grid-template-columns:1fr;} .reading-text-panel{max-height:280px;} }
+
+  /* ---------- WRITING SECTION ---------- */
+  .writing-textarea{width:100%;min-height:220px;background:var(--bg);border:1px solid var(--border);color:var(--ink);
+    border-radius:8px;padding:14px;font-family:var(--sans);font-size:14.5px;line-height:1.6;resize:vertical;}
+  .word-count-badge{display:inline-block;margin-top:8px;font-size:12.5px;padding:5px 12px;border-radius:999px;
+    background:var(--bg-panel);border:1px solid var(--border);color:var(--ink-dim);}
+  .word-count-badge.ok{color:var(--green);border-color:var(--green);}
+  .word-count-badge.bad{color:var(--red);border-color:var(--red);}
+
+  /* ---------- TOAST ---------- */
+  #toastWrap{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+  .toast{background:var(--bg-panel);border:1px solid var(--accent);color:var(--ink);padding:12px 18px;border-radius:8px;
+    font-size:13.5px;box-shadow:0 8px 20px rgba(0,0,0,0.3);animation:toastIn .2s ease;max-width:320px;}
+  .toast.error{border-color:var(--red);}
+  @keyframes toastIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .q-block .q-title{font-weight:600;margin-bottom:10px;}
+  .opt{display:flex;align-items:center;gap:10px;padding:8px 4px;border-radius:6px;cursor:pointer;text-transform:none;letter-spacing:normal;}
+  .opt:hover{background:rgba(255,255,255,0.03);}
+  .opt input{accent-color:var(--accent);}
+
+  .result-banner{text-align:center;padding:30px 20px;border-radius:10px;margin-bottom:10px;}
+  .result-banner.good{background:rgba(111,169,138,0.12);border:1px solid var(--green);}
+  .result-banner.bad{background:rgba(192,83,62,0.12);border:1px solid var(--red);}
+  .result-banner .big{font-family:var(--serif);font-size:38px;margin:6px 0;}
+
+  .cert-student-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:12px;}
+  .cert-student-card h4{margin:0 0 10px;font-family:var(--serif);font-size:16px;}
+  .cert-test-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--border);font-size:13.5px;}
+  .cert-test-row:first-of-type{border-top:none;}
+
+  .config-warning{
+    background:rgba(192,83,62,0.15);border:1px solid var(--red);color:#f3d9d3;
+    padding:14px 16px;border-radius:8px;font-size:13px;line-height:1.6;margin-bottom:20px;
+  }
+  .config-warning code{background:rgba(0,0,0,0.25);padding:1px 6px;border-radius:4px;font-family:var(--mono);}
+  .sync-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-dim);}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;}
+  .sync-dot.off{background:var(--red);}
+  .hint{color:var(--ink-dim);font-size:12.5px;margin-top:6px;}
+  .hint a{color:var(--accent);text-decoration:underline;cursor:pointer;}
+  .user-bar{display:flex;align-items:center;justify-content:space-between;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;color:var(--ink-dim);}
+  .footer-note{margin-top:36px;color:var(--ink-dim);font-size:12px;text-align:center;line-height:1.6;}
+  .hidden{display:none !important;}
+
+  /* ---------- LANDING PAGE ---------- */
+  .site-nav{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:18px 0;border-bottom:1px solid var(--border);margin-bottom:8px;}
+  .site-nav .brand{display:flex;align-items:center;gap:10px;}
+  .site-nav .brand-icon{font-size:26px;}
+  .site-nav .brand-text h2{font-family:var(--serif);font-size:19px;margin:0;}
+  .site-nav .brand-text h2 span{color:var(--accent);}
+  .site-nav .brand-text p{margin:0;font-size:11.5px;color:var(--ink-dim);}
+  .site-nav .nav-links{display:flex;gap:22px;flex-wrap:wrap;}
+  .site-nav .nav-links a{color:var(--ink-dim);text-decoration:none;font-size:13.5px;cursor:pointer;}
+  .site-nav .nav-links a:hover{color:var(--accent);}
+  .site-nav .nav-right{display:flex;align-items:center;gap:12px;}
+
+  .hero{padding:44px 0 30px;}
+  .hero-badge{display:inline-flex;align-items:center;gap:6px;background:var(--bg-panel);border:1px solid var(--border);
+    padding:6px 14px;border-radius:999px;font-size:12.5px;color:var(--accent);margin-bottom:18px;}
+  .hero h1{font-family:var(--serif);font-size:34px;line-height:1.2;margin:0 0 16px;}
+  .hero h1 span{color:var(--accent);}
+  .hero p.lead{color:var(--ink-dim);font-size:15px;line-height:1.6;max-width:520px;margin:0 0 20px;}
+  .hero-tags{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:26px;}
+  .hero-tags span{font-size:12px;color:var(--ink-dim);background:var(--bg-panel);border:1px solid var(--border);padding:5px 12px;border-radius:999px;}
+  /* ---------- HERO ILLUSTRATION (laptop + plant + notebook + books + flag) ---------- */
+  .illustration-wrap{position:relative;min-height:400px;display:flex;align-items:center;justify-content:center;}
+  .deco-blob{position:absolute;width:340px;height:340px;border-radius:50%;
+    background:radial-gradient(circle, rgba(224,169,76,0.16), transparent 70%);top:10%;left:10%;z-index:0;}
+
+  .laptop{position:relative;width:340px;z-index:2;}
+  .laptop-screen{background:#1b232c;border-radius:14px 14px 4px 4px;padding:10px;box-shadow:0 18px 40px rgba(0,0,0,0.35);}
+  .screen-topbar{display:flex;justify-content:space-between;align-items:center;color:#cfd8dc;font-size:10.5px;
+    font-family:var(--mono);padding:0 4px 8px;}
+  .screen-topbar .dots{color:#e0a94c;letter-spacing:2px;}
+  .screen-body{background:#f7f3ea;border-radius:8px;display:flex;overflow:hidden;min-height:210px;}
+  .screen-sidebar{background:#eee7d8;padding:10px 8px;width:82px;flex-shrink:0;}
+  .sb-item{font-size:8.5px;color:#5c5346;padding:6px 4px;border-radius:5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;}
+  .sb-item.active{background:#e0a94c;color:#2a1e08;font-weight:700;}
+  .screen-main{padding:12px 14px;flex:1;}
+  .screen-welcome{font-family:var(--serif);font-size:13.5px;color:#221b10;font-weight:700;}
+  .screen-sub{font-size:9px;color:#8a8271;margin-bottom:8px;}
+  .screen-stats{display:flex;gap:6px;margin-bottom:10px;}
+  .screen-stat{flex:1;background:#fff;border:1px solid #e5ddc9;border-radius:6px;padding:6px 4px;text-align:center;}
+  .screen-stat b{display:block;font-family:var(--serif);font-size:14px;color:#b9822f;}
+  .screen-stat span{font-size:6.8px;color:#8a8271;}
+  .screen-activity-title{font-size:9px;color:#8a8271;margin-bottom:4px;}
+  .act-row{display:flex;justify-content:space-between;font-size:8.5px;color:#3a3222;padding:4px 0;border-bottom:1px dashed #e5ddc9;}
+  .act-row:last-child{border-bottom:none;}
+  .act-ok{color:#3f7d5c;font-weight:700;}
+  .laptop-base{height:14px;width:112%;margin-left:-6%;background:linear-gradient(#3a4652,#232c34);
+    border-radius:0 0 10px 10px;box-shadow:0 6px 14px rgba(0,0,0,0.3);}
+  .laptop-base::after{content:'';display:block;width:60px;height:5px;background:#151a1e;margin:0 auto;border-radius:0 0 6px 6px;}
+
+  .deco-plant{position:absolute;left:-6%;bottom:6%;z-index:3;width:70px;height:100px;}
+  .plant-pot{position:absolute;bottom:0;left:12px;width:44px;height:34px;
+    background:linear-gradient(#c07a4a,#a1602f);border-radius:4px 4px 10px 10px;}
+  .plant-leaf{position:absolute;width:26px;height:40px;background:#4f8f5e;border-radius:50% 50% 50% 0;bottom:26px;}
+  .plant-leaf.l1{left:6px;transform:rotate(-25deg);background:#5b9a67;}
+  .plant-leaf.l2{left:22px;transform:rotate(6deg);background:#3f7d5c;}
+  .plant-leaf.l3{left:36px;transform:rotate(30deg);background:#5b9a67;}
+
+  .deco-notebook{position:absolute;right:2%;bottom:2%;z-index:3;width:150px;height:100px;
+    background:#faf6ea;border-radius:6px;box-shadow:0 10px 24px rgba(0,0,0,0.18);transform:rotate(-4deg);padding:14px 10px;}
+  .notebook-spiral{position:absolute;left:6px;top:8px;bottom:8px;width:10px;
+    background-image:radial-gradient(circle, #b9822f 2px, transparent 2.4px);background-size:10px 12px;}
+  .notebook-text{font-family:'Segoe Print','Comic Sans MS',cursive;font-size:12px;color:#3a3222;
+    margin-left:14px;line-height:1.25;}
+  .notebook-pen{position:absolute;right:-6px;top:20px;width:80px;height:6px;background:#1b232c;
+    border-radius:3px;transform:rotate(48deg);box-shadow:0 2px 4px rgba(0,0,0,0.25);}
+  .notebook-pen::after{content:'';position:absolute;right:-4px;top:0;width:8px;height:6px;background:#e0a94c;border-radius:0 3px 3px 0;}
+
+  .deco-books{position:absolute;right:-4%;top:6%;z-index:1;width:120px;}
+  .book{height:22px;border-radius:3px;color:#f2ede0;font-size:8px;font-weight:700;letter-spacing:0.4px;
+    display:flex;align-items:center;padding:0 10px;box-shadow:0 6px 12px rgba(0,0,0,0.2);margin-bottom:-4px;}
+  .book.b1{background:#2f4d63;width:112px;transform:rotate(-3deg);}
+  .book.b2{background:#8a3b34;width:100px;transform:rotate(-6deg);margin-left:10px;}
+  .book.b3{background:#2e5c46;width:118px;transform:rotate(-2deg);margin-left:-4px;}
+
+  .deco-flag{position:absolute;right:10%;top:-4%;z-index:4;width:26px;height:60px;}
+  .flag-pole{position:absolute;left:0;top:0;bottom:0;width:2px;background:#8a8271;}
+  .flag-cloth{position:absolute;left:2px;top:2px;width:22px;height:14px;border-radius:0 2px 2px 0;
+    background:
+      linear-gradient(45deg, transparent 46%, #fff 46%, #fff 54%, transparent 54%),
+      linear-gradient(-45deg, transparent 46%, #fff 46%, #fff 54%, transparent 54%),
+      linear-gradient(#1b3a6b, #1b3a6b);
+    box-shadow:0 2px 4px rgba(0,0,0,0.2);}
+
+  .deco-cup{position:absolute;right:0%;bottom:34%;z-index:3;width:40px;height:46px;}
+  .cup-body{position:absolute;bottom:0;width:38px;height:26px;background:#f7f3ea;border:1px solid #e5ddc9;
+    border-radius:4px 4px 8px 8px;}
+  .pencil{position:absolute;bottom:14px;width:5px;height:34px;border-radius:2px 2px 0 0;}
+  .pencil.p1{left:6px;background:#e0a94c;transform:rotate(-8deg);}
+  .pencil.p2{left:16px;background:#c0533e;transform:rotate(2deg);}
+  .pencil.p3{left:26px;background:#3f7d5c;transform:rotate(10deg);}
+
+  @media (max-width: 720px){
+    .illustration-wrap{display:none;}
+    .hero{padding-top:26px;}
+  }
+
+  .stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:20px;margin:26px 0;}
+  .stats-bar .stat{text-align:center;}
+  .stats-bar .stat b{display:block;font-family:var(--serif);font-size:22px;color:var(--accent);}
+  .stats-bar .stat span{font-size:11.5px;color:var(--ink-dim);}
+
+  .section-title{font-family:var(--serif);font-size:23px;text-align:center;margin:40px 0 22px;}
+  .section-title span{color:var(--accent);}
+
+  .feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;}
+  .feature-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:20px;}
+  .feature-card .fi{font-size:22px;margin-bottom:10px;}
+  .feature-card h4{font-family:var(--serif);font-size:15px;margin:0 0 6px;}
+  .feature-card p{margin:0;font-size:13px;color:var(--ink-dim);line-height:1.5;}
+
+  .steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:18px;position:relative;}
+  .step{text-align:center;}
+  .step .step-num{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#1c1305;font-weight:700;
+    display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-family:var(--serif);}
+  .step .step-icon{font-size:22px;margin-bottom:6px;}
+  .step h4{font-family:var(--serif);font-size:14.5px;margin:0 0 6px;}
+  .step p{margin:0;font-size:12.5px;color:var(--ink-dim);line-height:1.5;}
+
+  .cta-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    background:var(--bg-panel);border:1px solid var(--accent-dim);border-radius:10px;padding:22px 24px;margin:36px 0;}
+  .cta-banner h4{font-family:var(--serif);font-size:16px;margin:0 0 4px;}
+  .cta-banner p{margin:0;font-size:13px;color:var(--ink-dim);}
+
+  .site-footer{border-top:1px solid var(--border);padding:24px 0;display:flex;justify-content:space-between;
+    flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--ink-dim);}
+  .site-footer a{color:var(--ink-dim);text-decoration:none;margin-right:16px;}
+  .site-footer a:hover{color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <nav class="site-nav">
+    <div class="brand">
+      <span class="brand-icon">📖</span>
+      <div class="brand-text">
+        <h2>Tutor<span>Help</span></h2>
+        <p>Платформа для репетиторов английского языка</p>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a onclick="scrollToSection('view-home')">Главная</a>
+      <a onclick="scrollToSection('featuresSection')">Возможности</a>
+      <a onclick="scrollToSection('howItWorksSection')">Как это работает</a>
+      <a onclick="scrollToSection('aboutSection')">О проекте</a>
+    </div>
+    <div class="nav-right">
+      <button id="themeToggleBtn" onclick="toggleTheme()" title="Светлая/тёмная тема"
+        style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:15px;color:var(--ink);">🌙</button>
+      <button class="primary" style="margin-top:0;padding:9px 18px;" onclick="ctaLogin()">Войти</button>
+    </div>
+  </nav>
+
+  <div id="configWarning" class="config-warning hidden">
+    ⚠ База данных не подключена. Откройте файл в текстовом редакторе, найдите блок <code>firebaseConfig</code>
+    в самом конце файла и вставьте туда ключи вашего проекта Firebase (см. инструкцию в чате). Пока ключи не вставлены,
+    сайт работает только у вас в браузере и не будет виден ученикам с других компьютеров.
+  </div>
+
+  <!-- ROЛЬ + РЕГИСТРАЦИЯ: одно окно сразу под шапкой -->
+  <section id="view-home">
+
+    <!-- HERO -->
+    <div class="hero" style="display:grid;grid-template-columns:1.1fr 0.9fr;gap:36px;align-items:center;">
+      <div>
+        <div class="hero-badge">⭐ Я создаю тесты, вы выбираете и используете</div>
+        <h1>Качественные тесты по английскому языку для <span>ваших учеников</span></h1>
+        <p class="lead">Готовая база тестов по школьной программе. Выбирайте подходящие тесты, отправляйте ученикам кодом и отслеживайте результаты в удобном кабинете.</p>
+        <div class="hero-tags">
+          <span>🎁 Всё бесплатно</span>
+          <span>♾️ Без ограничений</span>
+          <span>🛡️ Без скрытых платежей</span>
+        </div>
+        <div class="roles">
+          <button class="role-card" onclick="ctaSelectRole('teacher')">
+            <span class="icon">📘</span>
+            <h3>Я — репетитор</h3>
+            <p>Выбираю тесты и создаю коды для учеников.</p>
+          </button>
+          <button class="role-card" onclick="ctaSelectRole('student')">
+            <span class="icon">✏️</span>
+            <h3>Я — ученик</h3>
+            <p>Прохожу тесты и учусь.</p>
+          </button>
+        </div>
+      </div>
+
+      <div class="illustration-wrap">
+        <div class="deco-blob"></div>
+
+        <div class="laptop">
+          <div class="laptop-screen">
+            <div class="screen-topbar"><span>tutorhelp</span><span class="dots">●</span></div>
+            <div class="screen-body">
+              <div class="screen-sidebar">
+                <div class="sb-item active">🏠 Главная</div>
+                <div class="sb-item">📚 Мои тесты</div>
+                <div class="sb-item">📤 Назначенные</div>
+                <div class="sb-item">🎓 Учащиеся</div>
+                <div class="sb-item">📊 Результаты</div>
+                <div class="sb-item">⚙️ Настройки</div>
+              </div>
+              <div class="screen-main">
+                <div class="screen-welcome">Добро пожаловать!</div>
+                <div class="screen-sub">Обзор</div>
+                <div class="screen-stats">
+                  <div class="screen-stat"><b id="previewTestsCount">—</b><span>Доступно тестов</span></div>
+                  <div class="screen-stat"><b>32</b><span>Назначено тестов</span></div>
+                  <div class="screen-stat"><b>87%</b><span>Средний результат</span></div>
+                </div>
+                <div class="screen-activity-title">Последняя активность</div>
+                <div class="screen-activity">
+                  <div class="act-row"><span>📘 Present Simple</span><span class="act-ok">86%</span></div>
+                  <div class="act-row"><span>📗 Past Simple</span><span class="act-ok">92%</span></div>
+                  <div class="act-row"><span>📙 Modal Verbs</span><span class="act-ok">75%</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="laptop-base"></div>
+        </div>
+
+        <div class="deco-plant">
+          <div class="plant-leaf l1"></div>
+          <div class="plant-leaf l2"></div>
+          <div class="plant-leaf l3"></div>
+          <div class="plant-pot"></div>
+        </div>
+
+        <div class="deco-notebook">
+          <div class="notebook-spiral"></div>
+          <div class="notebook-text">Study<br>Practice<br>Succeed 🖤</div>
+          <div class="notebook-pen"></div>
+        </div>
+
+        <div class="deco-books">
+          <div class="book b1">ENGLISH GRAMMAR</div>
+          <div class="book b2">VOCABULARY</div>
+          <div class="book b3">PRACTICE TESTS</div>
+        </div>
+
+        <div class="deco-flag">
+          <div class="flag-pole"></div>
+          <div class="flag-cloth"></div>
+        </div>
+
+        <div class="deco-cup">
+          <div class="pencil p1"></div>
+          <div class="pencil p2"></div>
+          <div class="pencil p3"></div>
+          <div class="cup-body"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="stats-bar">
+      <div class="stat"><b id="statTestsCount">—</b><span>готовых тестов</span></div>
+      <div class="stat"><b>100%</b><span>бесплатно сейчас и навсегда</span></div>
+      <div class="stat"><b>∞</b><span>кодов и учеников без ограничений</span></div>
+      <div class="stat"><b>🔒</b><span>результаты хранятся только у вас</span></div>
+    </div>
+
+    <!-- FEATURES -->
+    <h2 class="section-title" id="featuresSection">Почему репетиторы выбирают <span>TutorHelp</span></h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="fi">⚡</div>
+        <h4>Качественные тесты</h4>
+        <p>Тесты по темам школьной и разговорной программы, база регулярно пополняется.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fi">🔍</div>
+        <h4>Удобный выбор</h4>
+        <p>Фильтры по учебнику, уровню и теме — легко найти нужный тест.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fi">📈</div>
+        <h4>Результаты учеников</h4>
+        <p>Подробная статистика и разбор ошибок по каждому ученику.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fi">🛡️</div>
+        <h4>Безопасно и бесплатно</h4>
+        <p>Ваши данные и результаты учеников остаются в вашем кабинете. Все функции бесплатны.</p>
+      </div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <h2 class="section-title" id="howItWorksSection">Как это работает?</h2>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-icon">📂</div>
+        <h4>Выбираете тест</h4>
+        <p>Готовая база тестов по темам, уровням и учебникам.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-icon">🔑</div>
+        <h4>Создаёте код</h4>
+        <p>Указываете ученика — получаете уникальный код.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-icon">👤</div>
+        <h4>Ученик проходит тест</h4>
+        <p>С любого компьютера, в удобное для него время.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-icon">📊</div>
+        <h4>Вы получаете результат</h4>
+        <p>Результаты и сертификаты — в вашем кабинете.</p>
+      </div>
+    </div>
+
+    <!-- CTA BANNER -->
+    <div class="cta-banner" id="aboutSection">
+      <div>
+        <h4>Проект на старте — всё бесплатно</h4>
+        <p>Платформа развивается и пополняется новыми тестами.</p>
+      </div>
+      <button class="primary" style="margin-top:0;" onclick="ctaLogin()">Попробовать бесплатно</button>
+    </div>
+
+    <!-- AUTH: одно окно с вкладками репетитор/ученик -->
+    <div class="panel" id="authSection">
+      <div class="tabs">
+        <button class="tab-btn active" id="roleTabTeacher" onclick="selectRole('teacher')">📘 Я — репетитор</button>
+        <button class="tab-btn" id="roleTabStudent" onclick="selectRole('student')">✏️ Я — ученик</button>
+      </div>
+
+      <!-- TEACHER: обязательный вход/регистрация -->
+      <div id="homeTeacherPanel">
+        <!-- Уже вошли — показываем это вместо формы входа -->
+        <div id="teacherAlreadyLoggedIn" class="hidden">
+          <h2>С возвращением!</h2>
+          <p class="hint" style="margin-bottom:16px;">Вы вошли как <b id="teacherAlreadyEmail"></b></p>
+          <button class="primary" style="width:100%;" onclick="goTeacher()">Перейти в кабинет</button>
+          <button class="secondary" style="width:100%;margin-top:10px;" onclick="signOutTeacher()">Выйти из аккаунта</button>
+        </div>
+
+        <div id="teacherLoginForm">
+          <h2 id="authTitle">Вход в кабинет репетитора</h2>
+
+          <button class="secondary" style="width:100%;margin-top:6px;" onclick="signInWithGoogle()">
+            Войти через Google
+          </button>
+
+          <div style="text-align:center;color:var(--ink-dim);font-size:12.5px;margin:16px 0;">— или по email —</div>
+
+          <label for="authEmail">Email</label>
+          <input type="text" id="authEmail" placeholder="you@example.com">
+
+          <label for="authPassword">Пароль</label>
+          <input type="password" id="authPassword" placeholder="Минимум 6 символов">
+
+          <button class="primary" id="authSubmitBtn" onclick="submitEmailAuth()">Войти</button>
+
+          <p class="hint" id="authError"></p>
+          <p class="hint" id="authSwitchWrap">
+            Нет аккаунта? <a href="#" onclick="toggleAuthMode(event)">Зарегистрироваться</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- STUDENT: необязательный вход + ввод кода -->
+      <div id="homeStudentPanel" class="hidden">
+        <div id="studentAuthLoggedOut">
+          <button class="secondary" style="width:100%;" onclick="toggleStudentAuth()">
+            Войти в аккаунт (по желанию) — чтобы видеть историю всех тестов и скачивать сертификаты
+          </button>
+          <div id="studentAuthForm" class="hidden" style="margin-top:16px;">
+            <button class="secondary" style="width:100%;" onclick="signInWithGoogleStudent()">Войти через Google</button>
+            <div style="text-align:center;color:var(--ink-dim);font-size:12.5px;margin:16px 0;">— или по email —</div>
+            <label for="stuEmail">Email</label>
+            <input type="text" id="stuEmail" placeholder="you@example.com">
+            <label for="stuPassword">Пароль</label>
+            <input type="password" id="stuPassword" placeholder="Минимум 6 символов">
+            <button class="primary" id="stuAuthSubmitBtn" onclick="submitStudentEmailAuth()">Войти</button>
+            <p class="hint" id="stuAuthError"></p>
+            <p class="hint" id="stuAuthSwitchWrap">
+              Нет аккаунта? <a href="#" onclick="toggleStudentAuthMode(event)">Зарегистрироваться</a>
+            </p>
+          </div>
+        </div>
+
+        <div id="studentAuthLoggedIn" class="hidden">
+          <div class="user-bar">
+            <span id="studentEmailLabel"></span>
+            <button class="secondary small" onclick="signOutStudent()">Выйти</button>
+          </div>
+          <div id="studentHistoryWrap"></div>
+        </div>
+
+        <h2 style="margin-top:22px;">Введите код</h2>
+        <label for="sCode">Код от репетитора</label>
+        <input type="text" id="sCode" placeholder="Например: 4F7K2Q" style="text-transform:uppercase;letter-spacing:2px;">
+        <button class="primary" onclick="startTestByCode()">Начать тест</button>
+        <p class="hint" id="sError"></p>
+      </div>
+    </div>
+
+    <p class="hint" style="text-align:center;margin-top:14px;">Результаты хранятся в общей базе данных (Firebase) — ученики могут проходить тест с любого компьютера, а вы увидите результат в своём кабинете.</p>
+
+    <footer class="site-footer">
+      <div>
+        <b style="color:var(--ink);">TutorHelp</b> — платформа для репетиторов английского языка
+      </div>
+      <div>
+        <a onclick="scrollToSection('aboutSection')">О проекте</a>
+        <a href="mailto:maksim896@icloud.com">Обратная связь</a>
+      </div>
+    </footer>
+  </section>
+
+  <!-- TEACHER DASHBOARD (виден только уже вошедшим репетиторам) -->
+  <section id="view-teacher" class="hidden">
+    <button class="back-link" onclick="goHome()">← на главную</button>
+
+    <div id="teacher-dashboard">
+      <div class="user-bar">
+        <span id="teacherEmailLabel"></span>
+        <button class="secondary small" onclick="signOutTeacher()">Выйти</button>
+      </div>
+
+      <div id="teacherBlockedNotice" class="panel hidden">
+        <h2>Аккаунт заблокирован</h2>
+        <p>Обратитесь к администратору платформы.</p>
+      </div>
+
+      <div id="teacher-tabs-and-panels" class="dash-layout">
+        <aside class="dash-sidebar">
+          <button class="dash-nav-item" data-tab="create" onclick="setTeacherTab('create')">➕ Создать код</button>
+          <button class="dash-nav-item" data-tab="results" onclick="setTeacherTab('results')">📊 Результаты</button>
+          <button class="dash-nav-item" data-tab="certs" onclick="setTeacherTab('certs')">📄 Выдать сертификат</button>
+          <button class="dash-nav-item" data-tab="students" onclick="setTeacherTab('students')">🎓 Мои ученики</button>
+          <button class="dash-nav-item" data-tab="account" onclick="setTeacherTab('account')">👤 Аккаунт</button>
+          <button class="dash-nav-item hidden" data-tab="admin" id="adminTabBtn" onclick="setTeacherTab('admin')">👑 Админ</button>
+        </aside>
+
+        <div class="dash-content">
+          <div class="breadcrumb">Главная <span>›</span> <span id="dashBreadcrumbCurrent">Создать код</span></div>
+
+          <!-- Create code -->
+          <div id="teacher-create">
+            <h2 class="dash-title">Создать код для ученика</h2>
+            <p class="dash-subtitle">Выберите тест и сгенерируйте код доступа</p>
+
+            <div class="create-grid">
+              <div class="create-form">
+                <div class="step-card">
+                  <div class="step-card-icon">📘</div>
+                  <div class="step-card-body">
+                    <label>1. Учебник</label>
+                    <p class="step-hint">Выберите учебник</p>
+                    <select id="tBook" onchange="onTeacherBookChange()"></select>
+                  </div>
+                </div>
+
+                <div class="step-card">
+                  <div class="step-card-icon">📶</div>
+                  <div class="step-card-body">
+                    <label>2. Уровень</label>
+                    <p class="step-hint">Выберите уровень</p>
+                    <select id="tLevel" onchange="onTeacherLevelChange()"></select>
+                  </div>
+                </div>
+
+                <div class="step-card">
+                  <div class="step-card-icon">📄</div>
+                  <div class="step-card-body">
+                    <label>3. Название теста</label>
+                    <p class="step-hint">Выберите готовый тест</p>
+                    <select id="tCourse" onchange="onTeacherTestChange()"></select>
+                  </div>
+                </div>
+
+                <div class="step-card">
+                  <div class="step-card-icon">🎯</div>
+                  <div class="step-card-body">
+                    <label>4. Тема</label>
+                    <p class="step-hint">Заполняется автоматически</p>
+                    <input type="text" id="tTopic" readonly placeholder="—">
+                  </div>
+                </div>
+
+                <div class="info-row" id="testInfoRow"></div>
+
+                <div class="step-card">
+                  <div class="step-card-icon">👤</div>
+                  <div class="step-card-body">
+                    <label>5. Имя ученика</label>
+                    <p class="step-hint">Укажите имя и фамилию ученика</p>
+                    <input type="text" id="tName" placeholder="Александр Петров">
+                  </div>
+                </div>
+
+                <button class="primary" style="width:100%;" onclick="createCode()">🔗 Сгенерировать код</button>
+
+                <div id="codeResult" class="code-reveal hidden">
+                  <div class="meta">Код доступа для ученика</div>
+                  <div class="code" id="codeValue">—</div>
+                  <div class="meta" id="codeMeta"></div>
+                </div>
+              </div>
+
+              <div class="create-summary">
+                <h4>Ваш тест для ученика</h4>
+                <div id="createSummaryWrap"></div>
+                <p class="summary-note">✅ После генерации кода отправьте его ученику для доступа к тесту</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Results -->
+          <div id="teacher-results" class="hidden">
+            <h2 class="dash-title">Результаты учеников</h2>
+            <div id="resultsTableWrap"></div>
+          </div>
+
+          <!-- Certificates -->
+          <div id="teacher-certs" class="hidden">
+            <h2 class="dash-title">Сертификаты</h2>
+            <div id="certsWrap"></div>
+          </div>
+
+          <!-- Students -->
+          <div id="teacher-students" class="hidden">
+            <h2 class="dash-title">Мои ученики</h2>
+            <div id="teacherStudentsWrap"></div>
+          </div>
+
+          <!-- Account -->
+          <div id="teacher-account" class="hidden">
+            <h2 class="dash-title">Аккаунт</h2>
+            <p class="dash-subtitle">Вы вошли как <b id="settingsEmailLabel"></b></p>
+
+            <div class="step-card">
+              <div class="step-card-icon">🧑</div>
+              <div class="step-card-body">
+                <label>Отображаемое имя</label>
+                <p class="step-hint">Видно вам в кабинете вместо email</p>
+                <input type="text" id="acctDisplayName" placeholder="Например: Максим Орехов">
+              </div>
+            </div>
+
+            <div class="step-card">
+              <div class="step-card-icon">✍️</div>
+              <div class="step-card-body">
+                <label>Подпись на сертификатах</label>
+                <p class="step-hint">Печатается в поле «Подпись репетитора» на сертификатах ваших учеников</p>
+                <input type="text" id="acctCertSignature" placeholder="Например: Орехов М.А.">
+              </div>
+            </div>
+
+            <button class="primary" onclick="saveAccountSettings()">Сохранить</button>
+            <p class="hint" id="acctSaveMsg"></p>
+
+            <div id="acctPasswordSection" style="margin-top:26px;">
+              <h3 style="font-family:var(--serif);font-size:15px;margin:0 0 4px;">Смена пароля</h3>
+              <div class="step-card">
+                <div class="step-card-icon">🔒</div>
+                <div class="step-card-body">
+                  <label>Текущий пароль</label>
+                  <input type="password" id="acctCurrentPassword" placeholder="Введите текущий пароль">
+                </div>
+              </div>
+              <div class="step-card">
+                <div class="step-card-icon">🔑</div>
+                <div class="step-card-body">
+                  <label>Новый пароль</label>
+                  <input type="password" id="acctNewPassword" placeholder="Минимум 6 символов">
+                </div>
+              </div>
+              <button class="secondary" onclick="changeAccountPassword()">Сменить пароль</button>
+              <p class="hint" id="acctPasswordMsg"></p>
+            </div>
+            <p class="hint" id="acctPasswordNote"></p>
+
+            <div style="margin-top:24px;">
+              <button class="secondary" onclick="toggleTheme()">Сменить тему оформления</button>
+              <button class="secondary" style="margin-left:8px;" onclick="signOutTeacher()">Выйти из аккаунта</button>
+            </div>
+          </div>
+
+          <!-- ADMIN -->
+          <div id="teacher-admin" class="panel hidden">
+          <h2><span class="num">👑</span>Админ-панель</h2>
+          <div class="tabs" id="admin-subtabs">
+            <button class="tab-btn" data-subtab="dashboard" onclick="setAdminSubTab('dashboard')">Dashboard</button>
+            <button class="tab-btn" data-subtab="tests" onclick="setAdminSubTab('tests')">Тесты</button>
+            <button class="tab-btn" data-subtab="books" onclick="setAdminSubTab('books')">Учебники</button>
+            <button class="tab-btn" data-subtab="teachers" onclick="setAdminSubTab('teachers')">Репетиторы</button>
+            <button class="tab-btn" data-subtab="students" onclick="setAdminSubTab('students')">Ученики</button>
+            <button class="tab-btn" data-subtab="certificate" onclick="setAdminSubTab('certificate')">Сертификат</button>
+          </div>
+
+          <!-- Dashboard -->
+          <div id="admin-dashboard">
+            <div id="adminDashboardWrap"></div>
+          </div>
+
+          <!-- Tests bank -->
+          <div id="admin-tests" class="hidden">
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:22px;">
+              <h3 style="font-family:var(--serif);font-size:15px;margin:0 0 8px;">📦 Массовый импорт тестов (JSON)</h3>
+              <p class="hint" style="margin-bottom:8px;">
+                Вставьте массив тестов в формате JSON (например, подготовленный из загруженного вами документа) и нажмите «Импортировать».
+                Учебники, которых ещё нет в списке, будут добавлены автоматически.
+              </p>
+              <textarea id="bulkImportJson" rows="6" placeholder="[ { &quot;title&quot;: &quot;Unit 1A&quot;, &quot;book&quot;: &quot;Speak out&quot;, &quot;level&quot;: &quot;Beginner (A1)&quot;, &quot;topic&quot;: &quot;Hello&quot;, &quot;sections&quot;: [...] }, ... ]"
+                style="width:100%;background:var(--bg-panel);border:1px solid var(--border);color:var(--ink);border-radius:7px;padding:10px;font-family:var(--mono);font-size:11.5px;"></textarea>
+              <button class="primary" style="margin-top:8px;" onclick="runBulkImport()">Импортировать</button>
+              <p class="hint" id="bulkImportStatus"></p>
+            </div>
+
+            <h3 style="font-family:var(--serif);font-size:16px;">Банк тестов</h3>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+              <select id="adminFilterBook" onchange="renderAdminTestsList()" style="max-width:180px;"></select>
+              <select id="adminFilterLevel" onchange="renderAdminTestsList()" style="max-width:180px;"></select>
+              <input type="text" id="adminFilterTopic" placeholder="Поиск по теме…" oninput="renderAdminTestsList()" style="max-width:200px;">
+            </div>
+            <div id="adminTestsListWrap"></div>
+
+            <h3 id="adminFormTitle" style="font-family:var(--serif);font-size:16px;margin-top:26px;">Добавить новый тест</h3>
+            <label for="adminTestTitle">Название теста</label>
+            <input type="text" id="adminTestTitle" placeholder="Например: Modal verbs">
+
+            <label for="adminTestBook">Учебник</label>
+            <select id="adminTestBook"></select>
+
+            <label for="adminTestLevel">Уровень</label>
+            <select id="adminTestLevel"></select>
+
+            <label for="adminTestTopic">Тема</label>
+            <input type="text" id="adminTestTopic" placeholder="Например: Present Simple">
+
+            <div id="adminSectionsWrap" style="margin-top:16px;"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">
+              <button class="secondary small" onclick="addAdminSection('grammar')">+ 📘 Grammar</button>
+              <button class="secondary small" onclick="addAdminSection('vocabulary')">+ 🔤 Vocabulary</button>
+              <button class="secondary small" onclick="addAdminSection('reading')">+ 📖 Reading</button>
+              <button class="secondary small" onclick="addAdminSection('writing')">+ ✍️ Writing</button>
+            </div>
+            <button class="primary" id="saveAdminTestBtn" onclick="saveAdminTest()">Сохранить тест</button>
+            <button class="secondary hidden" id="cancelEditBtn" onclick="cancelEditTest()">Отменить редактирование</button>
+            <p class="hint" id="adminError"></p>
+          </div>
+
+          <!-- Books -->
+          <div id="admin-books" class="hidden">
+            <h3 style="font-family:var(--serif);font-size:16px;">Учебники</h3>
+            <div style="display:flex;gap:8px;margin-bottom:16px;">
+              <input type="text" id="newBookName" placeholder="Название учебника" style="flex:1;">
+              <button class="secondary" onclick="addBook()">Добавить</button>
+            </div>
+            <div id="adminBooksWrap"></div>
+          </div>
+
+          <!-- Teachers -->
+          <div id="admin-teachers" class="hidden">
+            <h3 style="font-family:var(--serif);font-size:16px;">Репетиторы</h3>
+            <div id="adminTeachersWrap"></div>
+          </div>
+
+          <!-- Students -->
+          <div id="admin-students" class="hidden">
+            <h3 style="font-family:var(--serif);font-size:16px;">Ученики</h3>
+            <div id="adminStudentsWrap"></div>
+          </div>
+
+          <!-- Certificate template -->
+          <div id="admin-certificate" class="hidden">
+            <h3 style="font-family:var(--serif);font-size:16px;">Дизайн сертификата</h3>
+            <p class="hint" style="margin-bottom:14px;">
+              Загрузите своё изображение — оно станет фоном всех выдаваемых сертификатов.
+              Имя ученика, тест, результат и дата печатаются поверх картинки в тех же местах,
+              что и в стандартном дизайне, — оставьте там свободное место. Рекомендуемый размер: примерно 1000×700.
+            </p>
+            <div id="certTemplatePreviewWrap" style="margin-bottom:16px;"></div>
+            <label for="certTemplateFile">Файл изображения (PNG/JPEG)</label>
+            <input type="file" id="certTemplateFile" accept="image/*">
+            <button class="primary" onclick="uploadCertificateTemplate()">Загрузить</button>
+            <button class="secondary" onclick="resetCertificateTemplate()">Вернуть стандартный дизайн</button>
+            <p class="hint" id="certTemplateError"></p>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STUDENT: прохождение теста (виден после ввода кода) -->
+  <section id="view-student" class="hidden">
+    <button class="back-link" onclick="goHome()">← на главную</button>
+
+    <div id="student-sections-picker" class="panel hidden">
+      <h2 id="pickerTestHeader"></h2>
+      <p class="hint" style="margin-bottom:14px;">Выберите разделы, которые нужно пройти</p>
+      <div class="section-all-toggle">
+        <input type="checkbox" id="pickerAllSections" checked onchange="toggleAllSectionCards()">
+        <label for="pickerAllSections" style="text-transform:none;font-size:13.5px;margin:0;">Все разделы</label>
+      </div>
+      <div class="section-cards" id="sectionCardsWrap"></div>
+      <p class="hint" id="pickerError"></p>
+      <button class="primary" onclick="confirmSectionSelection()">Начать тест</button>
+    </div>
+
+    <div id="student-test" class="panel hidden">
+      <h2 id="testHeader"></h2>
+      <div id="sectionProgress" class="hint" style="margin-bottom:14px;"></div>
+      <div id="testQuestions"></div>
+      <button class="primary" id="sectionNextBtn">Далее</button>
+    </div>
+
+    <div id="student-result" class="panel hidden"></div>
+  </section>
+
+</div>
+
+<canvas id="certCanvas" width="1000" height="700" class="hidden"></canvas>
+<div id="toastWrap"></div>
+
+<!-- Firebase (общая база данных в интернете) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+<script>
+/* ---------------------------------------------------------
+   1) НАСТРОЙКА FIREBASE
+   Вставьте сюда ключи своего проекта из консоли Firebase
+   (Project settings → General → Your apps → SDK setup and configuration).
+--------------------------------------------------------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyAOLhd3VqQQ6T9GQtm97PxqPPFGKlztFXM",
+  authDomain: "tutorhelp-4c53c.firebaseapp.com",
+  projectId: "tutorhelp-4c53c",
+  storageBucket: "tutorhelp-4c53c.firebasestorage.app",
+  messagingSenderId: "972285249430",
+  appId: "1:972285249430:web:5b73f5a622aa8d03d97fb7"
+};
+
+// Email администратора — только этот аккаунт увидит вкладку "Админ".
+// Впишите сюда свой email именно так, как вы им регистрируетесь/входите на сайте.
+const ADMIN_EMAIL = "maksim896@icloud.com";
+
+const LEVELS = [
+  'Beginner (A1)',
+  'Elementary (A2)',
+  'Pre-Intermediate (A2+)',
+  'Intermediate (B1)',
+  'Upper-Intermediate (B2)',
+  'Advanced (C1)'
+];
+
+const FIREBASE_CONFIGURED = firebaseConfig.apiKey !== "ВСТАВЬТЕ_СЮДА" && firebaseConfig.apiKey.length > 5;
+let db = null;
+let auth = null;
+if (FIREBASE_CONFIGURED) {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  auth = firebase.auth();
+} else {
+  document.getElementById('configWarning').classList.remove('hidden');
+}
+
+/* ---------------------------------------------------------
+   2) ТЕСТЫ
+   Список пуст: в кабинете репетитора показываются только тесты,
+   созданные через админ-панель (хранятся в Firestore, коллекция "tests").
+--------------------------------------------------------- */
+const DEFAULT_TESTS = [];
+
+let customTests = [];
+let customTestsPromise = null;
+function ensureCustomTestsLoaded(){
+  if(!FIREBASE_CONFIGURED) return Promise.resolve([]);
+  if(!customTestsPromise){
+    customTestsPromise = db.collection('tests').get().then(snap=>{
+      customTests = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      return customTests;
+    }).catch(()=>{ customTestsPromise = null; return []; });
+  }
+  return customTestsPromise;
+}
+function invalidateCustomTestsCache(){ customTestsPromise = null; }
+function allTests(){ return [...DEFAULT_TESTS, ...customTests]; }
+function sortTestsNaturally(arr){
+  return [...arr].sort((a,b)=> a.title.localeCompare(b.title, 'ru', {numeric:true, sensitivity:'base'}));
+}
+
+/* ---------------------------------------------------------
+   МОДУЛЬНЫЕ СЕКЦИИ ТЕСТА (Grammar/Vocabulary/Reading/Writing)
+   Старые тесты (плоский questions[]) автоматически оборачиваются
+   в одну секцию Grammar — ничего из старых тестов не ломается.
+--------------------------------------------------------- */
+function getTestSections(test){
+  if(test.sections && test.sections.length) return test.sections;
+  return [{ type:'grammar', title: test.title || 'Вопросы', questions: test.questions || [] }];
+}
+function sectionIcon(type){ return {grammar:'📘', vocabulary:'🔤', reading:'📖', writing:'✍️'}[type] || '📄'; }
+function sectionDefaultTitle(type){ return {grammar:'Grammar', vocabulary:'Vocabulary', reading:'Reading', writing:'Writing'}[type] || 'Section'; }
+function sectionQuestionCount(section){
+  if(section.type === 'writing') return null;
+  return (section.questions || []).length;
+}
+function countAutoGradedQuestions(sections){
+  return sections.filter(s=>s.type!=='writing').reduce((sum,s)=>sum+(s.questions?s.questions.length:0),0);
+}
+
+/* ---------------------------------------------------------
+   TOAST-УВЕДОМЛЕНИЯ
+--------------------------------------------------------- */
+function showToast(message, type){
+  const wrap = document.getElementById('toastWrap');
+  if(!wrap) return;
+  const el = document.createElement('div');
+  el.className = 'toast' + (type === 'error' ? ' error' : '');
+  el.textContent = message;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.remove(); }, 3800);
+}
+function findTest(testId){ return allTests().find(t=>t.id===testId); }
+
+async function fetchCode(code){
+  const snap = await db.collection('codes').doc(code).get();
+  return snap.exists ? snap.data() : null;
+}
+async function saveCode(code, data){
+  await db.collection('codes').doc(code).set(data);
+}
+async function updateCode(code, data){
+  await db.collection('codes').doc(code).update(data);
+}
+async function fetchAllCodes(){
+  const uid = auth.currentUser.uid;
+  const snap = await db.collection('codes').where('teacherId','==',uid).get();
+  const rows = snap.docs.map(d=>d.data());
+  rows.sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+  return rows;
+}
+
+/* ---------------------------------------------------------
+   АВТОРИЗАЦИЯ РЕПЕТИТОРА
+--------------------------------------------------------- */
+let authMode = 'login'; // 'login' | 'register'
+
+function toggleAuthMode(e){
+  if(e) e.preventDefault();
+  authMode = authMode === 'login' ? 'register' : 'login';
+  document.getElementById('authTitle').textContent = authMode === 'login'
+    ? 'Вход в кабинет репетитора' : 'Регистрация репетитора';
+  document.getElementById('authSubmitBtn').textContent = authMode === 'login' ? 'Войти' : 'Зарегистрироваться';
+  document.getElementById('authSwitchWrap').innerHTML = authMode === 'login'
+    ? 'Нет аккаунта? <a href="#" onclick="toggleAuthMode(event)">Зарегистрироваться</a>'
+    : 'Уже есть аккаунт? <a href="#" onclick="toggleAuthMode(event)">Войти</a>';
+  document.getElementById('authError').textContent = '';
+}
+
+function authErrorText(err){
+  const map = {
+    'auth/email-already-in-use': 'Этот email уже зарегистрирован. Попробуйте войти.',
+    'auth/invalid-email': 'Некорректный email.',
+    'auth/weak-password': 'Пароль слишком короткий (минимум 6 символов).',
+    'auth/user-not-found': 'Пользователь с таким email не найден.',
+    'auth/wrong-password': 'Неверный пароль.',
+    'auth/invalid-credential': 'Неверный email или пароль.',
+    'auth/popup-closed-by-user': 'Окно входа через Google было закрыто.'
+  };
+  return map[err.code] || ('Ошибка: ' + err.message);
+}
+
+async function submitEmailAuth(){
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errEl = document.getElementById('authError');
+  errEl.textContent = '';
+  if(!email || !password){ errEl.textContent = 'Заполните email и пароль.'; return; }
+  const btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true;
+  try{
+    if(authMode === 'login'){
+      await auth.signInWithEmailAndPassword(email, password);
+    } else {
+      await auth.createUserWithEmailAndPassword(email, password);
+    }
+    document.getElementById('authEmail').value = '';
+    document.getElementById('authPassword').value = '';
+  } catch(err){
+    errEl.textContent = authErrorText(err);
+  } finally{
+    btn.disabled = false;
+  }
+}
+
+async function signInWithGoogle(){
+  const errEl = document.getElementById('authError');
+  errEl.textContent = '';
+  try{
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithPopup(provider);
+  } catch(err){
+    errEl.textContent = authErrorText(err);
+  }
+}
+
+function signOutTeacher(){
+  auth.signOut().then(()=> goHome());
+}
+
+let stuAuthMode = 'login'; // 'login' | 'register'
+let cachedStudentEntries = [];
+
+function toggleStudentAuth(){
+  const form = document.getElementById('studentAuthForm');
+  form.classList.toggle('hidden');
+}
+
+function toggleStudentAuthMode(e){
+  if(e) e.preventDefault();
+  stuAuthMode = stuAuthMode === 'login' ? 'register' : 'login';
+  document.getElementById('stuAuthSubmitBtn').textContent = stuAuthMode === 'login' ? 'Войти' : 'Зарегистрироваться';
+  document.getElementById('stuAuthSwitchWrap').innerHTML = stuAuthMode === 'login'
+    ? 'Нет аккаунта? <a href="#" onclick="toggleStudentAuthMode(event)">Зарегистрироваться</a>'
+    : 'Уже есть аккаунт? <a href="#" onclick="toggleStudentAuthMode(event)">Войти</a>';
+  document.getElementById('stuAuthError').textContent = '';
+}
+
+async function submitStudentEmailAuth(){
+  const email = document.getElementById('stuEmail').value.trim();
+  const password = document.getElementById('stuPassword').value;
+  const errEl = document.getElementById('stuAuthError');
+  errEl.textContent = '';
+  if(!email || !password){ errEl.textContent = 'Заполните email и пароль.'; return; }
+  const btn = document.getElementById('stuAuthSubmitBtn');
+  btn.disabled = true;
+  try{
+    if(stuAuthMode === 'login'){
+      await auth.signInWithEmailAndPassword(email, password);
+    } else {
+      await auth.createUserWithEmailAndPassword(email, password);
+    }
+    document.getElementById('stuEmail').value = '';
+    document.getElementById('stuPassword').value = '';
+  } catch(err){
+    errEl.textContent = authErrorText(err);
+  } finally{
+    btn.disabled = false;
+  }
+}
+
+async function signInWithGoogleStudent(){
+  const errEl = document.getElementById('stuAuthError');
+  errEl.textContent = '';
+  try{
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithPopup(provider);
+  } catch(err){
+    errEl.textContent = authErrorText(err);
+  }
+}
+
+function signOutStudent(){
+  auth.signOut().then(()=> refreshStudentAuthUI());
+}
+
+function refreshStudentAuthUI(){
+  if(!FIREBASE_CONFIGURED) return;
+  const isLoggedIn = !!auth.currentUser;
+  document.getElementById('studentAuthLoggedOut').classList.toggle('hidden', isLoggedIn);
+  document.getElementById('studentAuthLoggedIn').classList.toggle('hidden', !isLoggedIn);
+  if(isLoggedIn){
+    document.getElementById('studentEmailLabel').textContent = auth.currentUser.email || auth.currentUser.displayName || 'Вы вошли';
+    loadStudentHistory();
+  }
+}
+
+async function loadStudentHistory(){
+  const wrap = document.getElementById('studentHistoryWrap');
+  wrap.innerHTML = '<p class="empty-note">Загрузка истории…</p>';
+  try{
+    const uid = auth.currentUser.uid;
+    const snap = await db.collection('codes').where('studentUid','==',uid).get();
+    let entries = snap.docs.map(d=>d.data());
+    entries.sort((a,b)=> new Date(b.completedAt||b.createdAt) - new Date(a.completedAt||a.createdAt));
+    cachedStudentEntries = entries;
+    if(!entries.length){
+      wrap.innerHTML = '<p class="empty-note">Вы ещё не проходили тесты под этим аккаунтом.</p>';
+      return;
+    }
+    wrap.innerHTML = '<h3 style="font-family:var(--serif);font-size:15px;margin:16px 0 8px;">Ваши тесты</h3>' + entries.map(e=>{
+      const perfect = e.status==='done' && e.total > 0 && e.score === e.total;
+      return `
+        <div class="cert-test-row">
+          <span>${e.testTitle} — ${e.status==='done' ? (e.score+' / '+e.total) : 'в процессе'}</span>
+          ${perfect ? `<button class="secondary small" onclick="downloadCertificate('${e.code}')">Скачать сертификат</button>` : ''}
+        </div>`;
+    }).join('');
+  } catch(err){
+    wrap.innerHTML = '<p class="empty-note">Не удалось загрузить историю. Проверьте интернет-соединение.</p>';
+  }
+}
+
+async function ensureUserProfile(likelyRole){
+  if(!FIREBASE_CONFIGURED || !auth.currentUser) return;
+  const uid = auth.currentUser.uid;
+  const ref = db.collection('users').doc(uid);
+  try{
+    const snap = await ref.get();
+    if(!snap.exists){
+      await ref.set({
+        email: auth.currentUser.email || '',
+        role: likelyRole,
+        blocked: false,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString()
+      });
+    } else {
+      await ref.update({ lastLoginAt: new Date().toISOString() });
+    }
+  } catch(err){
+    console.error('ensureUserProfile failed', err);
+  }
+}
+
+if (FIREBASE_CONFIGURED) {
+  auth.onAuthStateChanged(()=>{
+    if(auth.currentUser){
+      const cameFromTeacherPanel = !document.getElementById('view-home').classList.contains('hidden')
+        && !document.getElementById('homeTeacherPanel').classList.contains('hidden');
+      const cameFromStudentPanel = !document.getElementById('view-home').classList.contains('hidden')
+        && !document.getElementById('homeStudentPanel').classList.contains('hidden');
+      ensureUserProfile(cameFromTeacherPanel ? 'teacher' : (cameFromStudentPanel ? 'student' : 'teacher'));
+    }
+    // Уже в кабинете репетитора — обновить вид (например, после выхода)
+    if(!document.getElementById('view-teacher').classList.contains('hidden')){
+      refreshTeacherView();
+    }
+    // Форма входа репетитора открыта на главной и человек только что вошёл — сразу перейти в кабинет
+    if(!document.getElementById('view-home').classList.contains('hidden')
+       && !document.getElementById('homeTeacherPanel').classList.contains('hidden')
+       && auth.currentUser){
+      goTeacher();
+    }
+    // Панель ученика открыта на главной — обновить необязательный вход и историю
+    if(!document.getElementById('view-home').classList.contains('hidden')
+       && !document.getElementById('homeStudentPanel').classList.contains('hidden')){
+      refreshStudentAuthUI();
+    }
+  });
+}
+
+/* ---------------------------------------------------------
+   НАВИГАЦИЯ
+--------------------------------------------------------- */
+function show(id){
+  ['view-home','view-teacher','view-student'].forEach(v=>{
+    document.getElementById(v).classList.toggle('hidden', v !== id);
+  });
+}
+function goHome(){
+  show('view-home');
+  resetHomeUI();
+}
+function resetHomeUI(){
+  document.getElementById('homeTeacherPanel').classList.remove('hidden');
+  document.getElementById('homeStudentPanel').classList.add('hidden');
+  document.getElementById('roleTabTeacher').classList.add('active');
+  document.getElementById('roleTabStudent').classList.remove('active');
+  renderTeacherHomePanel();
+}
+function renderTeacherHomePanel(){
+  const loggedIn = FIREBASE_CONFIGURED && auth.currentUser;
+  document.getElementById('teacherLoginForm').classList.toggle('hidden', loggedIn);
+  document.getElementById('teacherAlreadyLoggedIn').classList.toggle('hidden', !loggedIn);
+  if(loggedIn){
+    document.getElementById('teacherAlreadyEmail').textContent = auth.currentUser.email || auth.currentUser.displayName || '';
+  }
+}
+/* ---------------------------------------------------------
+   ЛЕНДИНГ: скролл к разделам, CTA-кнопки, живой счётчик тестов
+--------------------------------------------------------- */
+function scrollToSection(id){
+  const el = document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function ctaLogin(){
+  selectRole('teacher');
+  scrollToSection('authSection');
+}
+function ctaSelectRole(role){
+  selectRole(role);
+  scrollToSection('authSection');
+}
+async function loadPublicTestsCount(){
+  let count = DEFAULT_TESTS.length;
+  if(FIREBASE_CONFIGURED){
+    try{
+      await ensureCustomTestsLoaded();
+      count = allTests().length;
+    } catch(e){ /* оставляем количество базовых тестов */ }
+  }
+  const a = document.getElementById('statTestsCount');
+  const b = document.getElementById('previewTestsCount');
+  if(a) a.textContent = count + '+';
+  if(b) b.textContent = count + '+';
+}
+
+function selectRole(role){
+  if(role === 'teacher'){
+    if(FIREBASE_CONFIGURED && auth.currentUser){
+      // Уже вошли — сразу в кабинет, без формы входа
+      goTeacher();
+      return;
+    }
+    document.getElementById('homeTeacherPanel').classList.remove('hidden');
+    document.getElementById('homeStudentPanel').classList.add('hidden');
+    document.getElementById('roleTabTeacher').classList.add('active');
+    document.getElementById('roleTabStudent').classList.remove('active');
+  } else {
+    document.getElementById('homeStudentPanel').classList.remove('hidden');
+    document.getElementById('homeTeacherPanel').classList.add('hidden');
+    document.getElementById('roleTabStudent').classList.add('active');
+    document.getElementById('roleTabTeacher').classList.remove('active');
+    document.getElementById('sCode').value = '';
+    document.getElementById('sError').textContent = '';
+    refreshStudentAuthUI();
+  }
+}
+function goTeacher(){
+  show('view-teacher');
+  refreshTeacherView();
+}
+async function refreshTeacherView(){
+  const isLoggedIn = FIREBASE_CONFIGURED && auth.currentUser;
+  if(!isLoggedIn){
+    // Подстраховка: без входа кабинет не открыть — возвращаем на главную с открытой формой входа
+    show('view-home');
+    selectRole('teacher');
+    return;
+  }
+  document.getElementById('teacherEmailLabel').textContent = auth.currentUser.email || auth.currentUser.displayName || 'Вы вошли';
+
+  const isAdmin = ADMIN_EMAIL !== "ВСТАВЬТЕ_ВАШ_EMAIL_СЮДА"
+    && (auth.currentUser.email || '').toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  document.getElementById('adminTabBtn').classList.toggle('hidden', !isAdmin);
+
+  // Проверка блокировки
+  try{
+    const snap = await db.collection('users').doc(auth.currentUser.uid).get();
+    const profile = snap.exists ? snap.data() : null;
+    const blocked = !!(profile && profile.blocked) && !isAdmin;
+    document.getElementById('teacherBlockedNotice').classList.toggle('hidden', !blocked);
+    document.getElementById('teacher-tabs-and-panels').classList.toggle('hidden', blocked);
+    if(blocked) return;
+  } catch(err){ /* если проверка не удалась — не блокируем доступ */ }
+
+  setTeacherTab('create');
+}
+
+function setTeacherTab(tab){
+  document.querySelectorAll('#teacher-tabs-and-panels .dash-nav-item').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  ['create','results','certs','students','account','admin'].forEach(t=>{
+    const el = document.getElementById('teacher-'+t);
+    if(el) el.classList.toggle('hidden', t!==tab);
+  });
+  const titles = {create:'Создать код', results:'Результаты', certs:'Выдать сертификат', students:'Мои ученики', account:'Аккаунт', admin:'Админ'};
+  const bc = document.getElementById('dashBreadcrumbCurrent');
+  if(bc) bc.textContent = titles[tab] || '';
+  if(tab==='create') populateTestSelect();
+  if(tab==='results') renderResultsTable();
+  if(tab==='certs') renderCertificatesPanel();
+  if(tab==='students') loadTeacherStudentsList();
+  if(tab==='account') loadAccountSettings();
+  if(tab==='admin') setAdminSubTab('dashboard');
+}
+
+async function loadAccountSettings(){
+  const lbl = document.getElementById('settingsEmailLabel');
+  if(lbl) lbl.textContent = auth.currentUser ? (auth.currentUser.email || '') : '';
+  if(!FIREBASE_CONFIGURED || !auth.currentUser) return;
+  try{
+    const snap = await db.collection('users').doc(auth.currentUser.uid).get();
+    const profile = snap.exists ? snap.data() : {};
+    document.getElementById('acctDisplayName').value = profile.displayName || '';
+    document.getElementById('acctCertSignature').value = profile.certSignature || '';
+  } catch(e){ /* оставляем поля пустыми */ }
+
+  const isPasswordUser = auth.currentUser.providerData.some(p=>p.providerId==='password');
+  document.getElementById('acctPasswordSection').classList.toggle('hidden', !isPasswordUser);
+  document.getElementById('acctPasswordNote').textContent = isPasswordUser ? '' : 'Смена пароля недоступна для входа через Google — пароль управляется вашим Google-аккаунтом.';
+}
+
+async function saveAccountSettings(){
+  const msgEl = document.getElementById('acctSaveMsg');
+  msgEl.textContent = '';
+  const displayName = document.getElementById('acctDisplayName').value.trim();
+  const certSignature = document.getElementById('acctCertSignature').value.trim();
+  try{
+    await db.collection('users').doc(auth.currentUser.uid).set({displayName, certSignature}, {merge:true});
+    msgEl.textContent = 'Сохранено.';
+    const emailLbl = document.getElementById('teacherEmailLabel');
+    if(emailLbl) emailLbl.textContent = displayName || auth.currentUser.email || '';
+  } catch(err){
+    msgEl.textContent = 'Не удалось сохранить: ' + err.message;
+  }
+}
+
+async function changeAccountPassword(){
+  const msgEl = document.getElementById('acctPasswordMsg');
+  msgEl.textContent = '';
+  const currentPassword = document.getElementById('acctCurrentPassword').value;
+  const newPassword = document.getElementById('acctNewPassword').value;
+  if(!currentPassword || !newPassword){ msgEl.textContent = 'Заполните оба поля.'; return; }
+  if(newPassword.length < 6){ msgEl.textContent = 'Новый пароль должен быть не короче 6 символов.'; return; }
+  try{
+    const cred = firebase.auth.EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+    await auth.currentUser.reauthenticateWithCredential(cred);
+    await auth.currentUser.updatePassword(newPassword);
+    msgEl.textContent = 'Пароль изменён.';
+    document.getElementById('acctCurrentPassword').value = '';
+    document.getElementById('acctNewPassword').value = '';
+  } catch(err){
+    msgEl.textContent = authErrorText(err);
+  }
+}
+
+async function loadTeacherStudentsList(){
+  const wrap = document.getElementById('teacherStudentsWrap');
+  wrap.innerHTML = '<p class="empty-note">Загрузка…</p>';
+  try{
+    const entries = await fetchAllCodes();
+    cachedEntries = entries;
+    const byStudent = {};
+    entries.forEach(e=>{ (byStudent[e.studentName] = byStudent[e.studentName] || []).push(e); });
+    const names = Object.keys(byStudent);
+    if(!names.length){ wrap.innerHTML = '<p class="empty-note">Пока нет учеников.</p>'; return; }
+    wrap.innerHTML = names.map(name=>{
+      const list = byStudent[name];
+      const done = list.filter(e=>e.status==='done');
+      const avg = done.length ? Math.round(done.reduce((s,e)=>s+(e.score/e.total),0)/done.length*100) : null;
+      return `<div class="cert-student-card"><h4>${name}</h4>
+        <div class="cert-test-row"><span>Тестов пройдено: ${done.length} из ${list.length}</span><span>${avg!=null ? 'Средний балл: '+avg+'%' : ''}</span></div>
+      </div>`;
+    }).join('');
+  } catch(err){
+    wrap.innerHTML = '<p class="empty-note">Не удалось загрузить список.</p>';
+  }
+}
+
+/* ---------------------------------------------------------
+   ТЕАЧЕР: создание кода
+--------------------------------------------------------- */
+async function populateTestSelect(){
+  await ensureCustomTestsLoaded();
+  await populateTeacherBookSelect();
+  populateTeacherLevelSelect();
+  filterTeacherTestOptions();
+}
+
+async function populateTeacherBookSelect(){
+  try{
+    const snap = await db.collection('books').get();
+    cachedBooks = snap.docs.map(d=>({id:d.id, name:d.data().name}));
+  } catch(e){ cachedBooks = []; }
+  const sel = document.getElementById('tBook');
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">Все учебники</option>' + cachedBooks.map(b=>`<option value="${b.name}">${b.name}</option>`).join('');
+  if(prev && cachedBooks.some(b=>b.name===prev)) sel.value = prev;
+}
+function populateTeacherLevelSelect(){
+  const sel = document.getElementById('tLevel');
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">Все уровни</option>' + LEVELS.map(l=>`<option value="${l}">${l}</option>`).join('');
+  if(prev && LEVELS.includes(prev)) sel.value = prev;
+}
+function onTeacherBookChange(){ filterTeacherTestOptions(); }
+function onTeacherLevelChange(){ filterTeacherTestOptions(); }
+function onTeacherTestChange(){ updateTeacherTestInfo(); }
+
+function filterTeacherTestOptions(){
+  const book = document.getElementById('tBook').value;
+  const level = document.getElementById('tLevel').value;
+  let filtered = allTests().filter(t=>{
+    if(book && t.book !== book) return false;
+    if(level && t.level !== level) return false;
+    return true;
+  });
+  filtered = sortTestsNaturally(filtered);
+  const sel = document.getElementById('tCourse');
+  sel.innerHTML = filtered.length
+    ? filtered.map(t=>`<option value="${t.id}">${t.title}</option>`).join('')
+    : '<option value="">Нет подходящих тестов</option>';
+  updateTeacherTestInfo();
+}
+
+async function updateTeacherTestInfo(){
+  const testId = document.getElementById('tCourse').value;
+  const test = testId ? findTest(testId) : null;
+  const topicInput = document.getElementById('tTopic');
+  const infoRow = document.getElementById('testInfoRow');
+  if(topicInput) topicInput.value = test && test.topic ? test.topic : '';
+  if(!test){
+    if(infoRow) infoRow.innerHTML = '';
+    updateTeacherSummary();
+    return;
+  }
+  const qCount = countAutoGradedQuestions(getTestSections(test));
+  const estMinutes = Math.max(5, Math.round(qCount * 1.5));
+  let avgText = '—';
+  if(FIREBASE_CONFIGURED){
+    try{
+      const snap = await db.collection('codes').where('testId','==',testId).where('status','==','done').get();
+      const scores = snap.docs.map(d=>d.data()).filter(c=>c.total>0);
+      if(scores.length){
+        avgText = Math.round(scores.reduce((s,c)=>s+(c.score/c.total),0)/scores.length*100) + '%';
+      }
+    } catch(e){ /* оставляем "—" */ }
+  }
+  if(infoRow){
+    infoRow.innerHTML = `
+      <div class="info-item"><b>${qCount}</b><span>вопросов</span></div>
+      <div class="info-item"><b>${estMinutes} мин</b><span>время на тест</span></div>
+      <div class="info-item"><b>${test.level || '—'}</b><span>уровень</span></div>
+      <div class="info-item"><b>${avgText}</b><span>средний результат</span></div>
+    `;
+  }
+  updateTeacherSummary();
+}
+
+function updateTeacherSummary(){
+  const wrap = document.getElementById('createSummaryWrap');
+  if(!wrap) return;
+  const book = document.getElementById('tBook').value || '—';
+  const level = document.getElementById('tLevel').value || '—';
+  const testId = document.getElementById('tCourse').value;
+  const test = testId ? findTest(testId) : null;
+  wrap.innerHTML = `
+    <div class="summary-row"><span class="si">📘</span><div><span class="sl">Учебник</span><span class="sv">${book}</span></div></div>
+    <div class="summary-row"><span class="si">📶</span><div><span class="sl">Уровень</span><span class="sv">${level}</span></div></div>
+    <div class="summary-row"><span class="si">📄</span><div><span class="sl">Тест</span><span class="sv">${test ? test.title : '—'}</span></div></div>
+    <div class="summary-row"><span class="si">🎯</span><div><span class="sl">Тема</span><span class="sv">${test && test.topic ? test.topic : '—'}</span></div></div>
+    <div class="summary-row"><span class="si">❓</span><div><span class="sl">Количество вопросов</span><span class="sv">${test ? countAutoGradedQuestions(getTestSections(test)) : '—'}</span></div></div>
+  `;
+}
+
+/* ---------------------------------------------------------
+   АДМИН-ПАНЕЛЬ
+--------------------------------------------------------- */
+function setAdminSubTab(tab){
+  document.querySelectorAll('#admin-subtabs .tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.subtab===tab));
+  ['dashboard','tests','books','teachers','students','certificate'].forEach(t=>{
+    document.getElementById('admin-'+t).classList.toggle('hidden', t!==tab);
+  });
+  if(tab==='dashboard') loadAdminDashboard();
+  if(tab==='tests'){ refreshBookSelectOptions(); populateLevelSelects(); loadAdminTestsList(); }
+  if(tab==='books') loadAdminBooks();
+  if(tab==='teachers') loadAdminTeachers();
+  if(tab==='students') loadAdminStudents();
+  if(tab==='certificate') loadCertificateTemplatePanel();
+}
+
+async function loadAdminDashboard(){
+  const wrap = document.getElementById('adminDashboardWrap');
+  wrap.innerHTML = '<p class="empty-note">Загрузка статистики…</p>';
+  try{
+    const [usersSnap, testsSnap, codesSnap] = await Promise.all([
+      db.collection('users').get(),
+      db.collection('tests').get(),
+      db.collection('codes').get()
+    ]);
+    const users = usersSnap.docs.map(d=>d.data());
+    const teachersCount = users.filter(u=>u.role==='teacher').length;
+    const studentsCount = users.filter(u=>u.role==='student').length;
+    const testsCount = testsSnap.size + DEFAULT_TESTS.length;
+    const codes = codesSnap.docs.map(d=>d.data());
+    const doneCount = codes.filter(c=>c.status==='done').length;
+    const certsCount = codes.filter(c=>c.certificateIssued).length;
+
+    wrap.innerHTML = `
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-num">${teachersCount}</div><div class="stat-label">Репетиторов</div></div>
+        <div class="stat-card"><div class="stat-num">${studentsCount}</div><div class="stat-label">Учеников с аккаунтом</div></div>
+        <div class="stat-card"><div class="stat-num">${testsCount}</div><div class="stat-label">Тестов в базе</div></div>
+        <div class="stat-card"><div class="stat-num">${doneCount}</div><div class="stat-label">Пройдено проверок</div></div>
+        <div class="stat-card"><div class="stat-num">${certsCount}</div><div class="stat-label">Выдано сертификатов</div></div>
+      </div>`;
+  } catch(err){
+    wrap.innerHTML = '<p class="empty-note">Не удалось загрузить статистику.</p>';
+  }
+}
+
+/* --- Учебники --- */
+let cachedBooks = [];
+async function refreshBookSelectOptions(){
+  try{
+    const snap = await db.collection('books').get();
+    cachedBooks = snap.docs.map(d=>({id:d.id, name:d.data().name}));
+  } catch(err){ cachedBooks = []; }
+  const createSel = document.getElementById('adminTestBook');
+  const filterSel = document.getElementById('adminFilterBook');
+  const optsPlain = cachedBooks.map(b=>`<option value="${b.name}">${b.name}</option>`).join('');
+  if(createSel) createSel.innerHTML = '<option value="">—</option>' + optsPlain;
+  if(filterSel) filterSel.innerHTML = '<option value="">Все учебники</option>' + optsPlain;
+}
+function populateLevelSelects(){
+  const optsPlain = LEVELS.map(l=>`<option value="${l}">${l}</option>`).join('');
+  const createSel = document.getElementById('adminTestLevel');
+  const filterSel = document.getElementById('adminFilterLevel');
+  if(createSel) createSel.innerHTML = '<option value="">—</option>' + optsPlain;
+  if(filterSel) filterSel.innerHTML = '<option value="">Все уровни</option>' + optsPlain;
+}
+async function loadAdminBooks(){
+  const wrap = document.getElementById('adminBooksWrap');
+  wrap.innerHTML = '<p class="empty-note">Загрузка…</p>';
+  try{
+    const snap = await db.collection('books').get();
+    const books = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    wrap.innerHTML = books.length ? books.map(b=>`
+      <div class="cert-test-row">
+        <span>${b.name}</span>
+        <button class="secondary small" onclick="deleteBook('${b.id}')">Удалить</button>
+      </div>`).join('') : '<p class="empty-note">Учебников пока нет.</p>';
+  } catch(err){
+    wrap.innerHTML = '<p class="empty-note">Не удалось загрузить учебники.</p>';
+  }
+}
+async function addBook(){
+  const input = document.getElementById('newBookName');
+  const name = input.value.trim();
+  if(!name) return;
+  try{
+    await db.collection('books').add({name, createdAt:new Date().toISOString()});
+    input.value = '';
+    loadAdminBooks();
+    refreshBookSelectOptions();
+  } catch(err){ alert('Не удалось добавить учебник: ' + err.message); }
+}
+async function deleteBook(id){
+  if(!confirm('Удалить учебник? Тесты, где он указан, не удалятся, просто останутся без учебника в фильтре.')) return;
+  await db.collection('books').doc(id).delete();
+  loadAdminBooks();
+  refreshBookSelectOptions();
+}
+
+/* --- Дизайн сертификата --- */
+let certTemplateImage = null;
+let certTemplatePromise = null;
+
+function ensureCertTemplateLoaded(){
+  if(!FIREBASE_CONFIGURED) return Promise.resolve(null);
+  if(!certTemplatePromise){
+    certTemplatePromise = db.collection('settings').doc('certificate').get().then(snap=>{
+      certTemplateImage = snap.exists ? (snap.data().templateImage || null) : null;
+      return certTemplateImage;
+    }).catch(()=>{ certTemplatePromise = null; return null; });
+  }
+  return certTemplatePromise;
+}
+
+async function loadCertificateTemplatePanel(){
+  certTemplatePromise = null; // всегда перечитываем при открытии вкладки
+  await ensureCertTemplateLoaded();
+  renderCertTemplatePreview();
+}
+
+function renderCertTemplatePreview(){
+  const wrap = document.getElementById('certTemplatePreviewWrap');
+  if(!wrap) return;
+  wrap.innerHTML = certTemplateImage
+    ? `<img src="${certTemplateImage}" style="max-width:100%;border-radius:8px;border:1px solid var(--border);display:block;">`
+    : '<p class="empty-note">Сейчас используется стандартный дизайн сертификата.</p>';
+}
+
+function resizeImageForCertificate(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onerror = ()=>reject(new Error('Не удалось прочитать файл'));
+    reader.onload = ()=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const canvas = document.createElement('canvas');
+        canvas.width = 1000; canvas.height = 700;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0,0,1000,700);
+        ctx.drawImage(img, 0, 0, 1000, 700);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = ()=>reject(new Error('Не удалось загрузить изображение'));
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadCertificateTemplate(){
+  const fileInput = document.getElementById('certTemplateFile');
+  const errEl = document.getElementById('certTemplateError');
+  errEl.textContent = '';
+  const file = fileInput.files[0];
+  if(!file){ errEl.textContent = 'Выберите файл изображения.'; return; }
+  if(!file.type.startsWith('image/')){ errEl.textContent = 'Нужен файл изображения (PNG или JPEG).'; return; }
+  try{
+    const dataUrl = await resizeImageForCertificate(file);
+    await db.collection('settings').doc('certificate').set({
+      templateImage: dataUrl, updatedAt: new Date().toISOString()
+    });
+    certTemplateImage = dataUrl;
+    certTemplatePromise = Promise.resolve(dataUrl);
+    renderCertTemplatePreview();
+    fileInput.value = '';
+    errEl.textContent = 'Готово — новый дизайн сохранён.';
+  } catch(err){
+    errEl.textContent = 'Не удалось загрузить: ' + err.message;
+  }
+}
+
+async function resetCertificateTemplate(){
+  if(!confirm('Вернуть стандартный дизайн сертификата?')) return;
+  try{
+    await db.collection('settings').doc('certificate').delete();
+    certTemplateImage = null;
+    certTemplatePromise = Promise.resolve(null);
+    renderCertTemplatePreview();
+  } catch(err){
+    alert('Не удалось сбросить дизайн: ' + err.message);
+  }
+}
+
+/* --- Банк тестов --- */
+let adminAllCustomTests = [];
+let adminQCounter = 0;
+
+function escapeHtmlAttr(str){
+  return String(str==null?'':str)
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function addAdminQuestionBlockTo(containerEl, prefill){
+  adminQCounter++;
+  const qid = 'q'+adminQCounter+'_'+Date.now();
+  const div = document.createElement('div');
+  div.className = 'q-block';
+  div.dataset.qid = qid;
+  const qVal = prefill ? escapeHtmlAttr(prefill.q) : '';
+  const opts = prefill && prefill.options ? prefill.options : ['','','',''];
+  const correctIdx = prefill && Number.isInteger(prefill.correct) ? prefill.correct : 0;
+  div.innerHTML = `
+    <label>Вопрос</label>
+    <input type="text" class="adminQText" placeholder="Текст вопроса" value="${qVal}">
+    <label>Варианты ответа (отметьте правильный)</label>
+    ${[0,1,2,3].map(i=>`
+      <div class="opt">
+        <input type="radio" name="correct-${qid}" value="${i}" ${i===correctIdx?'checked':''}>
+        <input type="text" class="adminOpt" placeholder="Вариант ${i+1}" style="flex:1;" value="${escapeHtmlAttr(opts[i])}">
+      </div>
+    `).join('')}
+    <button class="secondary small" style="margin-top:8px;" onclick="this.closest('.q-block').remove()">Удалить вопрос</button>
+  `;
+  containerEl.appendChild(div);
+  return div;
+}
+
+/* ---------------------------------------------------------
+   СЕКЦИИ ТЕСТА (админ-конструктор)
+   addAdminSection() создаёт блок нужного типа, при желании
+   сразу заполненный (prefillSection) — используется и при
+   "+ Grammar/Vocabulary/Reading/Writing", и при редактировании.
+--------------------------------------------------------- */
+let adminSectionCounter = 0;
+
+function addAdminSection(type, prefillSection){
+  adminSectionCounter++;
+  const sid = 'sec'+adminSectionCounter+'_'+Date.now();
+  const wrap = document.getElementById('adminSectionsWrap');
+  const div = document.createElement('div');
+  div.className = 'admin-section-block';
+  div.dataset.sectionId = sid;
+  div.dataset.sectionType = type;
+
+  const titleVal = prefillSection ? escapeHtmlAttr(prefillSection.title || sectionDefaultTitle(type)) : sectionDefaultTitle(type);
+  let bodyHtml = '';
+
+  if(type === 'grammar' || type === 'vocabulary'){
+    bodyHtml = `
+      <div class="q-block-container"></div>
+      <button class="secondary small" onclick="addAdminQuestionBlockTo(this.previousElementSibling)">+ Добавить вопрос</button>
+      <button class="secondary small" onclick="toggleSectionImport('${sid}')">📥 Импорт вопросов</button>
+      ${sectionImportPanelHtml(sid)}
+    `;
+  } else if(type === 'reading'){
+    bodyHtml = `
+      <label>Текст для чтения</label>
+      <textarea class="readingTextInput" rows="6" placeholder="Вставьте текст, который будут читать ученики"></textarea>
+      <label style="margin-top:10px;">Вопросы к тексту</label>
+      <div class="q-block-container"></div>
+      <button class="secondary small" onclick="addAdminQuestionBlockTo(this.previousElementSibling)">+ Добавить вопрос</button>
+      <button class="secondary small" onclick="toggleSectionImport('${sid}')">📥 Импорт вопросов</button>
+      ${sectionImportPanelHtml(sid)}
+    `;
+  } else if(type === 'writing'){
+    bodyHtml = `
+      <label>Задание</label>
+      <textarea class="writingPromptInput" rows="4" placeholder="Write an email to your friend. Include: greeting, what you did, where you are, goodbye."></textarea>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;"><label>Мин. слов</label><input type="number" class="writingMinWords" value="40"></div>
+        <div style="flex:1;"><label>Макс. слов</label><input type="number" class="writingMaxWords" value="60"></div>
+      </div>
+      <label>Критерии проверки (через запятую)</label>
+      <input type="text" class="writingCriteria" placeholder="Grammar, Vocabulary, Task Completion, Spelling, Punctuation">
+      <p class="hint">Письменные ответы не проверяются автоматически (для настоящей проверки грамматики/лексики нейросетью нужен отдельный сервер с ИИ, которого пока нет) — репетитор читает ответ и сам выставляет оценку во вкладке «Результаты».</p>
+    `;
+  }
+
+  div.innerHTML = `
+    <div class="section-block-head">
+      <span class="section-type-badge">${sectionIcon(type)} ${type.toUpperCase()}</span>
+      <input type="text" class="sectionTitleInput" placeholder="Название секции" value="${titleVal}">
+      <button class="secondary small" onclick="this.closest('.admin-section-block').remove()">✕ Удалить секцию</button>
+    </div>
+    ${bodyHtml}
+  `;
+  wrap.appendChild(div);
+
+  if(prefillSection){
+    if(type === 'grammar' || type === 'vocabulary' || type === 'reading'){
+      const container = div.querySelector('.q-block-container');
+      (prefillSection.questions || []).forEach(q => addAdminQuestionBlockTo(container, q));
+      if(type === 'reading') div.querySelector('.readingTextInput').value = prefillSection.text || '';
+    } else if(type === 'writing'){
+      div.querySelector('.writingPromptInput').value = prefillSection.prompt || '';
+      div.querySelector('.writingMinWords').value = prefillSection.minWords || 40;
+      div.querySelector('.writingMaxWords').value = prefillSection.maxWords || 60;
+      div.querySelector('.writingCriteria').value = (prefillSection.criteria || []).join(', ');
+    }
+  }
+  return div;
+}
+
+function sectionImportPanelHtml(sid){
+  return `
+    <div class="section-import-panel hidden" data-import-for="${sid}" style="margin-top:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;">
+      <p class="hint" style="margin:0 0 8px;">
+        Формат: <code>QUESTION:</code> текст, затем <code>A:</code> <code>B:</code> <code>C:</code> <code>D:</code> варианты, затем <code>ANSWER:</code> буква. Между вопросами — пустая строка.
+      </p>
+      <textarea class="sectionImportText" rows="8" placeholder="QUESTION:&#10;She ___ to school every day.&#10;&#10;A:&#10;go&#10;&#10;B:&#10;goes&#10;&#10;C:&#10;going&#10;&#10;D:&#10;gone&#10;&#10;ANSWER:&#10;B"
+        style="width:100%;background:var(--bg-panel);border:1px solid var(--border);color:var(--ink);border-radius:7px;padding:8px;font-family:var(--mono);font-size:12px;"></textarea>
+      <div style="margin-top:8px;">
+        <button class="primary small" onclick="runSectionImport('${sid}')">Разобрать и добавить</button>
+        <button class="secondary small" onclick="toggleSectionImport('${sid}')">Отмена</button>
+      </div>
+      <p class="hint section-import-error"></p>
+    </div>`;
+}
+
+function toggleSectionImport(sid){
+  const panel = document.querySelector(`.section-import-panel[data-import-for="${sid}"]`);
+  if(panel) panel.classList.toggle('hidden');
+}
+
+/* ---------------------------------------------------------
+   ИМПОРТ ВОПРОСОВ
+   parseQuestionsText() разбирает конкретно текстовый формат
+   QUESTION/A/B/C/D/ANSWER и не привязан к конкретной секции —
+   на эту же функцию в будущем можно завести парсеры Excel/Word/ИИ,
+   результат у них у всех один и тот же: {q, options[4], correct}.
+--------------------------------------------------------- */
+function parseQuestionsText(raw){
+  const questions = [];
+  const errors = [];
+  const blocks = raw.split(/\n?QUESTION:\s*\n?/i).map(b=>b.trim()).filter(Boolean);
+  const letterMap = {A:0,B:1,C:2,D:3};
+
+  blocks.forEach((block, idx)=>{
+    const qNum = idx+1;
+    const m = block.match(/^([\s\S]*?)\n?A:\s*\n?([\s\S]*?)\n?B:\s*\n?([\s\S]*?)\n?C:\s*\n?([\s\S]*?)\n?D:\s*\n?([\s\S]*?)\n?ANSWER:\s*\n?([\s\S]*)$/i);
+    if(!m){
+      errors.push(`Вопрос ${qNum}: не распознан формат (нужны A:, B:, C:, D:, ANSWER:).`);
+      return;
+    }
+    const qText = m[1].trim();
+    const options = [m[2].trim(), m[3].trim(), m[4].trim(), m[5].trim()];
+    const answerLetter = m[6].trim().split('\n')[0].trim().toUpperCase();
+
+    if(!qText){ errors.push(`Вопрос ${qNum}: пустой текст вопроса.`); return; }
+    if(options.some(o=>!o)){ errors.push(`Вопрос ${qNum}: заполнены не все варианты ответа.`); return; }
+    if(!(answerLetter in letterMap)){ errors.push(`Вопрос ${qNum}: не найден корректный ответ (ожидается A, B, C или D).`); return; }
+
+    questions.push({ q: qText, options, correct: letterMap[answerLetter] });
+  });
+
+  return { questions, errors };
+}
+
+function runSectionImport(sid){
+  const sectionBlock = document.querySelector(`.admin-section-block[data-section-id="${sid}"]`);
+  if(!sectionBlock) return;
+  const panel = sectionBlock.querySelector('.section-import-panel');
+  const textarea = panel.querySelector('.sectionImportText');
+  const errEl = panel.querySelector('.section-import-error');
+  errEl.textContent = '';
+  const raw = textarea.value;
+  if(!raw.trim()){ errEl.textContent = 'Вставьте текст с вопросами.'; return; }
+
+  const { questions, errors } = parseQuestionsText(raw);
+  if(!questions.length){
+    errEl.textContent = 'Не удалось распознать ни одного вопроса. ' + (errors[0] || '');
+    return;
+  }
+  const container = sectionBlock.querySelector('.q-block-container');
+  questions.forEach(q => addAdminQuestionBlockTo(container, q));
+
+  errEl.textContent = errors.length
+    ? `Добавлено ${questions.length} вопрос(ов). Пропущено с ошибками (${errors.length}).`
+    : `Добавлено ${questions.length} вопрос(ов).`;
+  textarea.value = '';
+}
+
+let editingTestId = null;
+
+async function saveAdminTest(){
+  const title = document.getElementById('adminTestTitle').value.trim();
+  const book = document.getElementById('adminTestBook').value;
+  const level = document.getElementById('adminTestLevel').value;
+  const topic = document.getElementById('adminTestTopic').value.trim();
+  const errEl = document.getElementById('adminError');
+  errEl.textContent = '';
+  if(!title){ errEl.textContent = 'Введите название теста.'; return; }
+
+  const sectionBlocks = document.querySelectorAll('#adminSectionsWrap .admin-section-block');
+  if(!sectionBlocks.length){ errEl.textContent = 'Добавьте хотя бы одну секцию (Grammar, Vocabulary, Reading или Writing).'; return; }
+
+  const sections = [];
+  for(const sBlock of sectionBlocks){
+    const type = sBlock.dataset.sectionType;
+    const sTitle = sBlock.querySelector('.sectionTitleInput').value.trim() || sectionDefaultTitle(type);
+
+    if(type === 'grammar' || type === 'vocabulary'){
+      const qBlocks = sBlock.querySelectorAll('.q-block');
+      if(!qBlocks.length){ errEl.textContent = `Секция «${sTitle}»: добавьте хотя бы один вопрос.`; return; }
+      const questions = [];
+      for(const qb of qBlocks){
+        const qText = qb.querySelector('.adminQText').value.trim();
+        const options = Array.from(qb.querySelectorAll('.adminOpt')).map(i=>i.value.trim());
+        const correctRadio = qb.querySelector('input[type=radio]:checked');
+        if(!qText || options.some(o=>!o) || !correctRadio){
+          errEl.textContent = `Секция «${sTitle}»: заполните все вопросы и варианты, отметьте правильный ответ.`;
+          return;
+        }
+        questions.push({q:qText, options, correct: parseInt(correctRadio.value,10)});
+      }
+      sections.push({type, title:sTitle, questions});
+
+    } else if(type === 'reading'){
+      const text = sBlock.querySelector('.readingTextInput').value.trim();
+      const qBlocks = sBlock.querySelectorAll('.q-block');
+      if(!text){ errEl.textContent = `Секция «${sTitle}»: добавьте текст для чтения.`; return; }
+      if(!qBlocks.length){ errEl.textContent = `Секция «${sTitle}»: добавьте хотя бы один вопрос к тексту.`; return; }
+      const questions = [];
+      for(const qb of qBlocks){
+        const qText = qb.querySelector('.adminQText').value.trim();
+        const options = Array.from(qb.querySelectorAll('.adminOpt')).map(i=>i.value.trim());
+        const correctRadio = qb.querySelector('input[type=radio]:checked');
+        if(!qText || options.some(o=>!o) || !correctRadio){
+          errEl.textContent = `Секция «${sTitle}»: заполните все вопросы и варианты, отметьте правильный ответ.`;
+          return;
+        }
+        questions.push({q:qText, options, correct: parseInt(correctRadio.value,10)});
+      }
+      sections.push({type, title:sTitle, text, questions});
+
+    } else if(type === 'writing'){
+      const prompt = sBlock.querySelector('.writingPromptInput').value.trim();
+      const minWords = parseInt(sBlock.querySelector('.writingMinWords').value,10) || 0;
+      const maxWords = parseInt(sBlock.querySelector('.writingMaxWords').value,10) || 0;
+      const criteriaRaw = sBlock.querySelector('.writingCriteria').value.trim();
+      const criteria = criteriaRaw ? criteriaRaw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+      if(!prompt){ errEl.textContent = `Секция «${sTitle}»: добавьте текст задания.`; return; }
+      if(!maxWords || maxWords < minWords){ errEl.textContent = `Секция «${sTitle}»: проверьте лимиты слов (макс. должен быть не меньше мин.).`; return; }
+      sections.push({type, title:sTitle, prompt, minWords, maxWords, criteria});
+    }
+  }
+
+  try{
+    const payload = { title, book: book || null, level: level || null, topic: topic || null, sections };
+    if(editingTestId){
+      await db.collection('tests').doc(editingTestId).update(payload);
+    } else {
+      payload.createdAt = new Date().toISOString();
+      await db.collection('tests').add(payload);
+    }
+    cancelEditTest();
+    invalidateCustomTestsCache();
+    loadAdminTestsList();
+    populateTestSelect();
+    showToast('Тест сохранён');
+  } catch(err){
+    errEl.textContent = 'Не удалось сохранить тест: ' + err.message;
+  }
+}
+
+function editCustomTest(id){
+  const test = adminAllCustomTests.find(t=>t.id===id);
+  if(!test) return;
+  editingTestId = id;
+  document.getElementById('adminTestTitle').value = test.title || '';
+  document.getElementById('adminTestBook').value = test.book || '';
+  document.getElementById('adminTestLevel').value = test.level || '';
+  document.getElementById('adminTestTopic').value = test.topic || '';
+  document.getElementById('adminSectionsWrap').innerHTML = '';
+  adminQCounter = 0; adminSectionCounter = 0;
+  getTestSections(test).forEach(sec => addAdminSection(sec.type, sec));
+  document.getElementById('adminFormTitle').textContent = 'Редактирование теста';
+  document.getElementById('saveAdminTestBtn').textContent = 'Сохранить изменения';
+  document.getElementById('cancelEditBtn').classList.remove('hidden');
+  document.getElementById('adminError').textContent = '';
+  document.getElementById('adminFormTitle').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function cancelEditTest(){
+  editingTestId = null;
+  document.getElementById('adminTestTitle').value = '';
+  document.getElementById('adminTestBook').value = '';
+  document.getElementById('adminTestLevel').value = '';
+  document.getElementById('adminTestTopic').value = '';
+  document.getElementById('adminSectionsWrap').innerHTML = '';
+  adminQCounter = 0; adminSectionCounter = 0;
+  document.getElementById('adminFormTitle').textContent = 'Добавить новый тест';
+  document.getElementById('saveAdminTestBtn').textContent = 'Сохранить тест';
+  document.getElementById('cancelEditBtn').classList.add('hidden');
+}
+
+async function runBulkImport(){
+  const textarea = document.getElementById('bulkImportJson');
+  const statusEl = document.getElementById('bulkImportStatus');
+  statusEl.textContent = '';
+  let data;
+  try{
+    data = JSON.parse(textarea.value);
+  } catch(err){
+    statusEl.textContent = 'Не удалось прочитать JSON: ' + err.message;
+    return;
+  }
+  if(!Array.isArray(data) || !data.length){
+    statusEl.textContent = 'Ожидается непустой массив тестов в формате JSON.';
+    return;
+  }
+
+  try{
+    const booksSnap = await db.collection('books').get();
+    const existingNames = new Set(booksSnap.docs.map(d=>d.data().name));
+    const neededBooks = [...new Set(data.map(t=>t.book).filter(Boolean))];
+    for(const name of neededBooks){
+      if(!existingNames.has(name)){
+        await db.collection('books').add({name, createdAt:new Date().toISOString()});
+      }
+    }
+  } catch(err){ /* учебники можно будет добавить вручную, если это не удалось */ }
+
+  let done = 0, failed = 0;
+  for(const t of data){
+    if(!t.title || !t.sections || !t.sections.length){ failed++; continue; }
+    try{
+      await db.collection('tests').add({
+        title: t.title, book: t.book || null, level: t.level || null, topic: t.topic || null,
+        sections: t.sections, createdAt: new Date().toISOString()
+      });
+      done++;
+    } catch(err){
+      failed++;
+    }
+    statusEl.textContent = `Импортирую ${done+failed} из ${data.length}…`;
+  }
+
+  statusEl.textContent = `Готово: добавлено ${done} из ${data.length}${failed?`, не удалось: ${failed}`:''}.`;
+  textarea.value = '';
+  invalidateCustomTestsCache();
+  loadAdminTestsList();
+  populateTestSelect();
+  refreshBookSelectOptions();
+  showToast(`Импортировано тестов: ${done}`);
+}
+
+async function loadAdminTestsList(){
+  const wrap = document.getElementById('adminTestsListWrap');
+  wrap.innerHTML = '<p class="empty-note">Загрузка…</p>';
+  try{
+    const snap = await db.collection('tests').get();
+    adminAllCustomTests = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderAdminTestsList();
+  } catch(err){
+    wrap.innerHTML = '<p class="empty-note">Не удалось загрузить тесты.</p>';
+  }
+}
+function renderAdminTestsList(){
+  const bookFilter = document.getElementById('adminFilterBook').value;
+  const levelFilter = document.getElementById('adminFilterLevel').value;
+  const topicFilter = (document.getElementById('adminFilterTopic').value || '').trim().toLowerCase();
+  let filtered = adminAllCustomTests.filter(t=>{
+    if(bookFilter && t.book !== bookFilter) return false;
+    if(levelFilter && t.level !== levelFilter) return false;
+    if(topicFilter && !(t.topic||'').toLowerCase().includes(topicFilter)) return false;
+    return true;
+  });
+  filtered = sortTestsNaturally(filtered);
+  const wrap = document.getElementById('adminTestsListWrap');
+  if(!filtered.length){ wrap.innerHTML = '<p class="empty-note">Тесты не найдены.</p>'; return; }
+  wrap.innerHTML = filtered.map(t=>{
+    const secBadges = getTestSections(t).map(s=>sectionIcon(s.type)).join(' ');
+    return `
+    <div class="cert-test-row">
+      <span>${secBadges} ${t.title} <span style="color:var(--ink-dim);font-size:12px;">${[t.book,t.level,t.topic].filter(Boolean).join(' · ')}</span></span>
+      <span>
+        <button class="secondary small" onclick="editCustomTest('${t.id}')">Редактировать</button>
+        <button class="secondary small" onclick="deleteCustomTest('${t.id}')">Удалить</button>
+      </span>
+    </div>`;
+  }).join('');
+}
+async function deleteCustomTest(id){
+  if(!confirm('Удалить тест?')) return;
+  await db.collection('tests').doc(id).delete();
+  invalidateCustomTestsCache();
+  loadAdminTestsList();
+  populateTestSelect();
+}
+
+/* --- Репетиторы / Ученики --- */
+async function loadAdminTeachers(){
+  const wrap = document.getElementById('adminTeachersWrap');
+  wrap.innerHTML = '<p class="empty-note">Загрузка…</p>';
+  try{
+    const [usersSnap, codesSnap] = await Promise.all([
+      db.collection('users').where('role','==','teacher').get(),
+      db.collection('codes').get()
+    ]);
+    const codes = codesSnap.docs.map(d=>d.data());
+    const rows = usersSnap.docs.map(d=>{
+      const u = d.data(); const uid = d.id;
+      const own = codes.filter(c=>c.teacherId===uid);
+      const studentsCount = new Set(own.map(c=>c.studentName)).size;
+      return {uid, ...u, codesCount: own.length, studentsCount};
+    });
+    if(!rows.length){ wrap.innerHTML = '<p class="empty-note">Пока нет ни одного репетитора.</p>'; return; }
+    wrap.innerHTML = `<table><thead><tr><th>Email</th><th>Регистрация</th><th>Кодов создано</th><th>Учеников</th><th>Статус</th><th></th></tr></thead><tbody>` +
+      rows.map(r=>`
+        <tr>
+          <td>${r.email}</td>
+          <td>${new Date(r.createdAt).toLocaleDateString('ru-RU')}</td>
+          <td>${r.codesCount}</td>
+          <td>${r.studentsCount}</td>
+          <td>${r.blocked ? '<span class="status-pill status-pending">заблокирован</span>' : '<span class="status-pill status-done">активен</span>'}</td>
+          <td><button class="secondary small" onclick="toggleUserBlock('${r.uid}', ${!!r.blocked}, 'teachers')">${r.blocked?'Разблокировать':'Заблокировать'}</button></td>
+        </tr>`).join('') + '</tbody></table>';
+  } catch(err){
+    wrap.innerHTML = '<p class="empty-note">Не удалось загрузить список.</p>';
+  }
+}
+
+async function loadAdminStudents(){
+  const wrap = document.getElementById('adminStudentsWrap');
+  wrap.innerHTML = '<p class="empty-note">Загрузка…</p>';
+  try{
+    const [usersSnap, codesSnap] = await Promise.all([
+      db.collection('users').where('role','==','student').get(),
+      db.collection('codes').get()
+    ]);
+    const codes = codesSnap.docs.map(d=>d.data());
+    const rows = usersSnap.docs.map(d=>{
+      const u = d.data(); const uid = d.id;
+      const own = codes.filter(c=>c.studentUid===uid && c.status==='done');
+      const avg = own.length ? Math.round(own.reduce((s,c)=>s+(c.score/c.total),0)/own.length*100) : null;
+      return {uid, ...u, testsCount: own.length, avgPercent: avg};
+    });
+    if(!rows.length){ wrap.innerHTML = '<p class="empty-note">Пока нет учеников с аккаунтом.</p>'; return; }
+    wrap.innerHTML = `<table><thead><tr><th>Email</th><th>Пройдено тестов</th><th>Средний балл</th><th>Статус</th><th></th></tr></thead><tbody>` +
+      rows.map(r=>`
+        <tr>
+          <td>${r.email}</td>
+          <td>${r.testsCount}</td>
+          <td>${r.avgPercent!=null ? r.avgPercent+'%' : '—'}</td>
+          <td>${r.blocked ? '<span class="status-pill status-pending">заблокирован</span>' : '<span class="status-pill status-done">активен</span>'}</td>
+          <td><button class="secondary small" onclick="toggleUserBlock('${r.uid}', ${!!r.blocked}, 'students')">${r.blocked?'Разблокировать':'Заблокировать'}</button></td>
+        </tr>`).join('') + '</tbody></table>';
+  } catch(err){
+    wrap.innerHTML = '<p class="empty-note">Не удалось загрузить список.</p>';
+  }
+}
+
+async function toggleUserBlock(uid, currentlyBlocked, listType){
+  if(!confirm(currentlyBlocked ? 'Разблокировать пользователя?' : 'Заблокировать пользователя? Он не сможет создавать коды/сохранять результаты под своим аккаунтом.')) return;
+  try{
+    await db.collection('users').doc(uid).update({blocked: !currentlyBlocked});
+    if(listType === 'teachers') loadAdminTeachers();
+    if(listType === 'students') loadAdminStudents();
+  } catch(err){
+    alert('Не удалось изменить статус: ' + err.message);
+  }
+}
+
+async function generateUniqueCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code, exists = true;
+  while(exists){
+    code = Array.from({length:6}, ()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+    const snap = await db.collection('codes').doc(code).get();
+    exists = snap.exists;
+  }
+  return code;
+}
+
+async function createCode(){
+  if(!FIREBASE_CONFIGURED){ alert('Сначала подключите базу данных Firebase (см. инструкцию в чате).'); return; }
+  if(!auth.currentUser){ alert('Сначала войдите в свой кабинет.'); return; }
+  const testId = document.getElementById('tCourse').value;
+  const name = document.getElementById('tName').value.trim();
+  if(!testId){ alert('Выберите тест — сейчас нет подходящего теста под выбранные учебник/уровень.'); return; }
+  if(!name){ alert('Введите фамилию и имя ученика'); return; }
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = 'Создаю…';
+  try{
+    const test = findTest(testId);
+    const sections = getTestSections(test);
+    const code = await generateUniqueCode();
+    await saveCode(code, {
+      code, studentName: name, testId, testTitle: test.title,
+      testBook: test.book || null, testLevel: test.level || null, testTopic: test.topic || null,
+      teacherId: auth.currentUser.uid,
+      status: 'pending', answers: null, score: null, total: countAutoGradedQuestions(sections),
+      createdAt: new Date().toISOString(), completedAt: null
+    });
+    document.getElementById('codeValue').textContent = code;
+    document.getElementById('codeMeta').textContent = `${name} · ${test.title}`;
+    document.getElementById('codeResult').classList.remove('hidden');
+    document.getElementById('tName').value = '';
+  } catch(err){
+    alert('Не удалось создать код. Проверьте настройки Firebase и подключение к интернету.\n' + err.message);
+  } finally{
+    btn.disabled = false; btn.textContent = '🔗 Сгенерировать код';
+  }
+}
+
+/* ---------------------------------------------------------
+   ТЕАЧЕР: таблица результатов
+--------------------------------------------------------- */
+let cachedEntries = [];
+
+async function renderResultsTable(){
+  const wrap = document.getElementById('resultsTableWrap');
+  if(!FIREBASE_CONFIGURED){
+    wrap.innerHTML = '<p class="empty-note">Подключите базу данных Firebase, чтобы видеть результаты.</p>';
+    return;
+  }
+  wrap.innerHTML = '<p class="empty-note">Загрузка…</p>';
+  let entries;
+  try{
+    entries = await fetchAllCodes();
+  } catch(err){
+    wrap.innerHTML = '<p class="empty-note">Не удалось загрузить данные. Проверьте интернет и настройки Firebase.</p>';
+    return;
+  }
+  cachedEntries = entries;
+  if(!entries.length){
+    wrap.innerHTML = '<p class="empty-note">Пока нет ни одного созданного кода.</p>';
+    return;
+  }
+  let rows = entries.map((e,i)=>{
+    const statusHtml = e.status==='done'
+      ? `<span class="status-pill status-done">пройден</span>`
+      : `<span class="status-pill status-pending">ожидание</span>`;
+    const scoreHtml = e.status==='done'
+      ? `<span class="${e.score===e.total?'score-good':(e.score/e.total<0.5?'score-bad':'')}">${e.score} / ${e.total}</span>`
+      : '—';
+    return `
+      <tr class="row-toggle" onclick="toggleDetail(${i})">
+        <td>${e.studentName}</td>
+        <td>${e.testTitle}</td>
+        <td><span style="font-family:var(--mono)">${e.code}</span></td>
+        <td>${statusHtml}</td>
+        <td>${scoreHtml}</td>
+        <td>${new Date(e.createdAt).toLocaleDateString('ru-RU')}</td>
+      </tr>
+      <tr class="expand-row hidden" id="detail-${i}"><td colspan="6">${renderDetail(e)}</td></tr>
+    `;
+  }).join('');
+  wrap.innerHTML = `
+    <table>
+      <thead><tr><th>Ученик</th><th>Тест</th><th>Код</th><th>Статус</th><th>Результат</th><th>Дата</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+function toggleDetail(i){
+  document.getElementById('detail-'+i).classList.toggle('hidden');
+}
+function renderDetail(e){
+  if(e.status!=='done') return '<p class="empty-note">Ученик ещё не прошёл тест.</p>';
+  const test = findTest(e.testId);
+
+  if(e.sectionAnswers && e.sectionAnswers.length){
+    return e.sectionAnswers.map((rec, pos)=>{
+      const section = test ? getTestSections(test)[rec.sectionIndex] : null;
+      if(rec.type === 'writing'){
+        return renderWritingReviewBlock(e, rec, pos, section);
+      }
+      if(!section){
+        return `<p class="empty-note">${rec.title || rec.type}: исходный тест изменён, детали недоступны.</p>`;
+      }
+      const qHtml = section.questions.map((q,i)=>{
+        const ans = rec.answers[i];
+        const ok = ans === q.correct;
+        return `<div class="detail-q ${ok?'detail-ok':'detail-bad'}">
+          <b>${i+1}. ${q.q}</b><br>
+          Ответ ученика: ${ans!=null?q.options[ans]:'нет ответа'} ${ok?'✓':'✗'}
+          ${!ok?`<br>Правильный ответ: ${q.options[q.correct]}`:''}
+        </div>`;
+      }).join('');
+      return `<h4 style="font-family:var(--serif);margin:14px 0 8px;">${sectionIcon(rec.type)} ${rec.title || sectionDefaultTitle(rec.type)} — ${rec.score}/${rec.total}</h4>${qHtml}`;
+    }).join('');
+  }
+
+  // Старый формат (плоский список вопросов) — для результатов, сохранённых до появления секций
+  if(!test || !test.questions) return '<p class="empty-note">Исходный тест недоступен.</p>';
+  return test.questions.map((q,i)=>{
+    const ans = e.answers[i];
+    const ok = ans===q.correct;
+    return `<div class="detail-q ${ok?'detail-ok':'detail-bad'}">
+      <b>${i+1}. ${q.q}</b><br>
+      Ответ ученика: ${ans!=null?q.options[ans]:'нет ответа'} ${ok?'✓':'✗'}
+      ${!ok?`<br>Правильный ответ: ${q.options[q.correct]}`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderWritingReviewBlock(e, rec, pos, section){
+  const review = (e.writingReviews && e.writingReviews[pos]) || null;
+  const criteria = section && section.criteria && section.criteria.length ? section.criteria.join(', ') : '';
+  return `
+    <div class="q-block" style="margin-top:14px;">
+      <div class="q-title">✍️ ${rec.title || 'Writing'} ${rec.wordCount!=null ? `— ${rec.wordCount} слов` : ''}
+        ${rec.withinLimits===false ? '<span style="color:var(--red);"> (вне лимита слов)</span>' : ''}
+      </div>
+      ${section ? `<p class="hint" style="margin-bottom:8px;">Задание: ${escapeHtmlAttr(section.prompt)}${criteria?` · Критерии: ${escapeHtmlAttr(criteria)}`:''}</p>` : ''}
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;white-space:pre-wrap;font-size:13.5px;margin-bottom:10px;">${escapeHtmlAttr(rec.text || '(пусто)')}</div>
+      <label>Оценка (0–100)</label>
+      <input type="number" min="0" max="100" id="wrScore_${e.code}_${pos}" value="${review && review.score!=null ? review.score : ''}">
+      <label>Комментарий</label>
+      <input type="text" id="wrComment_${e.code}_${pos}" value="${review ? escapeHtmlAttr(review.comment) : ''}" placeholder="Комментарий для ученика">
+      <button class="secondary small" style="margin-top:8px;" onclick="saveWritingReview('${e.code}', ${pos})">Сохранить оценку</button>
+      ${review ? `<p class="hint">Проверено ${new Date(review.reviewedAt).toLocaleString('ru-RU')}</p>` : '<p class="hint">Ещё не проверено репетитором</p>'}
+    </div>
+  `;
+}
+
+async function saveWritingReview(code, pos){
+  const scoreInput = document.getElementById(`wrScore_${code}_${pos}`);
+  const commentInput = document.getElementById(`wrComment_${code}_${pos}`);
+  const score = scoreInput.value === '' ? null : Math.max(0, Math.min(100, parseInt(scoreInput.value,10)));
+  const comment = commentInput.value.trim();
+  try{
+    const snap = await db.collection('codes').doc(code).get();
+    const data = snap.data();
+    const writingReviews = data.writingReviews || {};
+    writingReviews[pos] = { score, comment, reviewedAt: new Date().toISOString() };
+    await db.collection('codes').doc(code).update({ writingReviews });
+    showToast('Оценка сохранена');
+  } catch(err){
+    showToast('Не удалось сохранить оценку: ' + err.message, 'error');
+  }
+}
+
+/* ---------------------------------------------------------
+   ТЕАЧЕР: сертификаты
+--------------------------------------------------------- */
+async function renderCertificatesPanel(){
+  const wrap = document.getElementById('certsWrap');
+  if(!FIREBASE_CONFIGURED){
+    wrap.innerHTML = '<p class="empty-note">Подключите базу данных Firebase, чтобы выдавать сертификаты.</p>';
+    return;
+  }
+  wrap.innerHTML = '<p class="empty-note">Загрузка…</p>';
+  let entries;
+  try{
+    entries = await fetchAllCodes();
+  } catch(err){
+    wrap.innerHTML = '<p class="empty-note">Не удалось загрузить данные. Проверьте интернет и настройки Firebase.</p>';
+    return;
+  }
+  cachedEntries = entries;
+  const done = entries.filter(e=>e.status==='done');
+  if(!done.length){
+    wrap.innerHTML = '<p class="empty-note">Пока нет учеников, завершивших тест.</p>';
+    return;
+  }
+  const byStudent = {};
+  done.forEach(e=>{
+    (byStudent[e.studentName] = byStudent[e.studentName] || []).push(e);
+  });
+  wrap.innerHTML = Object.keys(byStudent).map(name=>{
+    const tests = byStudent[name].map(e=>`
+      <div class="cert-test-row">
+        <span>${e.testTitle} — ${e.score}/${e.total}</span>
+        <button class="secondary small" onclick="downloadCertificate('${e.code}')">Выдать сертификат</button>
+      </div>
+    `).join('');
+    return `<div class="cert-student-card"><h4>${name}</h4>${tests}</div>`;
+  }).join('');
+}
+
+async function downloadCertificate(code){
+  const e = cachedEntries.find(x=>x.code===code) || cachedStudentEntries.find(x=>x.code===code);
+  if(!e) return;
+  const canvas = document.getElementById('certCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  await ensureCertTemplateLoaded();
+
+  let teacherSignature = '';
+  if(FIREBASE_CONFIGURED && e.teacherId){
+    try{
+      const tSnap = await db.collection('users').doc(e.teacherId).get();
+      if(tSnap.exists){
+        const tData = tSnap.data();
+        teacherSignature = tData.certSignature || tData.displayName || '';
+      }
+    } catch(err){ /* оставляем пустой строку — напечатаем линию для подписи от руки */ }
+  }
+
+  if(certTemplateImage){
+    const img = new Image();
+    await new Promise(resolve=>{ img.onload = resolve; img.onerror = resolve; img.src = certTemplateImage; });
+    ctx.clearRect(0,0,W,H);
+    ctx.drawImage(img, 0, 0, W, H);
+  } else {
+    // тёмно-синий фон
+    ctx.fillStyle = '#0f1638';
+    ctx.fillRect(0,0,W,H);
+    // едва заметная тонкая рамка
+    ctx.strokeStyle = 'rgba(45,212,191,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(30,30,W-60,H-60);
+  }
+
+  const ORANGE = '#ff6a3d';
+  const TEAL = '#2dd4bf';
+  const WHITE = '#f3f6f8';
+
+  ctx.textAlign = 'center';
+
+  ctx.fillStyle = ORANGE;
+  ctx.font = 'bold 34px Georgia';
+  ctx.fillText('СЕРТИФИКАТ О ЗАВЕРШЕНИИ', W/2, 110);
+  ctx.fillText('УЧЕБНОГО МОДУЛЯ', W/2, 154);
+
+  // тонкая бирюзовая линия под заголовком
+  ctx.strokeStyle = TEAL;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W/2-190, 178);
+  ctx.lineTo(W/2+190, 178);
+  ctx.stroke();
+
+  ctx.fillStyle = TEAL;
+  ctx.font = '20px Georgia';
+  ctx.fillText('ПОДТВЕРЖДАЕТСЯ, ЧТО', W/2, 230);
+
+  ctx.fillStyle = WHITE;
+  ctx.font = 'bold 44px Georgia';
+  ctx.fillText(e.studentName, W/2, 320);
+
+  ctx.fillStyle = TEAL;
+  ctx.font = '17px Georgia';
+  ctx.fillText('закончил(а) учебный модуль по теме', W/2, 370);
+
+  ctx.fillStyle = WHITE;
+  ctx.font = 'bold 26px Georgia';
+  ctx.fillText(e.testTitle, W/2, 408);
+
+  ctx.fillStyle = TEAL;
+  ctx.font = '18px Georgia';
+  ctx.fillText(`Результат: ${e.score} из ${e.total}`, W/2, 452);
+
+  const dateStr = new Date(e.completedAt || Date.now()).toLocaleDateString('ru-RU');
+  ctx.font = '14px Georgia';
+  ctx.fillStyle = 'rgba(243,246,248,0.6)';
+  ctx.fillText('Дата: ' + dateStr, W/2, 484);
+
+  // подпись репетитора внизу слева (в стиле "имя + должность")
+  ctx.textAlign = 'left';
+  ctx.strokeStyle = TEAL;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(90, H-140);
+  ctx.lineTo(330, H-140);
+  ctx.stroke();
+
+  ctx.fillStyle = ORANGE;
+  ctx.font = 'bold 18px Georgia';
+  ctx.fillText(teacherSignature || 'Репетитор TutorHelp', 90, H-112);
+
+  ctx.fillStyle = TEAL;
+  ctx.font = '13px Georgia';
+  ctx.fillText('репетитор', 90, H-92);
+
+  if(!certTemplateImage){
+    // печать-плейсхолдер (пустой круг, как в референсе)
+    ctx.strokeStyle = TEAL;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(W-160, H-118, 55, 0, Math.PI*2);
+    ctx.stroke();
+  }
+
+  const link = document.createElement('a');
+  link.download = `Сертификат_${e.studentName.replace(/\s+/g,'_')}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+
+  if(FIREBASE_CONFIGURED){
+    db.collection('codes').doc(code).update({certificateIssued:true}).catch(()=>{});
+  }
+}
+
+/* ---------------------------------------------------------
+   УЧЕНИК: вход по коду и прохождение теста (по секциям)
+--------------------------------------------------------- */
+let currentCode = null;
+let currentEntry = null;
+let currentTest = null;
+let currentSections = [];
+let currentSectionQueue = [];
+let currentSectionPos = 0;
+let sectionAnswers = [];
+
+async function startTestByCode(){
+  const err = document.getElementById('sError');
+  if(!FIREBASE_CONFIGURED){ err.textContent = 'Сайт ещё не подключён к базе данных — обратитесь к репетитору.'; return; }
+  const code = document.getElementById('sCode').value.trim().toUpperCase();
+  if(!code){ err.textContent = 'Введите код.'; return; }
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = 'Проверяю…';
+  err.textContent = '';
+  try{
+    const entry = await fetchCode(code);
+    if(!entry){ err.textContent = 'Код не найден. Проверьте правильность ввода.'; return; }
+    if(entry.status === 'done'){ err.textContent = 'Этот тест уже был пройден по данному коду.'; return; }
+
+    await ensureCustomTestsLoaded();
+    const test = findTest(entry.testId);
+    if(!test){ err.textContent = 'Тест не найден (возможно, был удалён).'; return; }
+
+    currentCode = code;
+    currentEntry = entry;
+    currentTest = test;
+    currentSections = getTestSections(test);
+
+    if(currentSections.length > 1){
+      renderSectionPicker();
+    } else {
+      beginSectionFlow([0]);
+    }
+  } catch(e2){
+    err.textContent = 'Не удалось проверить код. Проверьте интернет-соединение и попробуйте снова.';
+  } finally{
+    btn.disabled = false; btn.textContent = 'Начать тест';
+  }
+}
+
+function renderSectionPicker(){
+  show('view-student');
+  document.getElementById('student-sections-picker').classList.remove('hidden');
+  document.getElementById('student-test').classList.add('hidden');
+  document.getElementById('student-result').classList.add('hidden');
+  document.getElementById('pickerTestHeader').textContent = `${currentTest.title} — ${currentEntry.studentName}`;
+  document.getElementById('pickerAllSections').checked = true;
+  document.getElementById('pickerError').textContent = '';
+
+  document.getElementById('sectionCardsWrap').innerHTML = currentSections.map((s,idx)=>{
+    const qCount = sectionQuestionCount(s);
+    const desc = s.type === 'writing' ? `${s.minWords}–${s.maxWords} слов` : `${qCount} вопрос(ов)`;
+    return `
+      <div class="section-card selected" data-section-idx="${idx}" onclick="toggleSectionCard(${idx})">
+        <div class="sc-icon">${sectionIcon(s.type)}</div>
+        <div class="sc-title">${escapeHtmlAttr(s.title || sectionDefaultTitle(s.type))}</div>
+        <div class="sc-desc">${desc}</div>
+      </div>`;
+  }).join('');
+}
+
+function toggleSectionCard(idx){
+  const card = document.querySelector(`.section-card[data-section-idx="${idx}"]`);
+  if(card) card.classList.toggle('selected');
+  const cards = document.querySelectorAll('.section-card');
+  document.getElementById('pickerAllSections').checked = Array.from(cards).every(c=>c.classList.contains('selected'));
+}
+function toggleAllSectionCards(){
+  const checked = document.getElementById('pickerAllSections').checked;
+  document.querySelectorAll('.section-card').forEach(c=>c.classList.toggle('selected', checked));
+}
+function confirmSectionSelection(){
+  const selected = Array.from(document.querySelectorAll('.section-card.selected')).map(c=>parseInt(c.dataset.sectionIdx,10));
+  const errEl = document.getElementById('pickerError');
+  if(!selected.length){ errEl.textContent = 'Выберите хотя бы один раздел.'; return; }
+  errEl.textContent = '';
+  beginSectionFlow(selected);
+}
+
+function beginSectionFlow(indices){
+  currentSectionQueue = indices;
+  currentSectionPos = 0;
+  sectionAnswers = [];
+  show('view-student');
+  document.getElementById('student-sections-picker').classList.add('hidden');
+  document.getElementById('student-test').classList.remove('hidden');
+  document.getElementById('student-result').classList.add('hidden');
+  renderCurrentSection();
+}
+
+function renderCurrentSection(){
+  const sIdx = currentSectionQueue[currentSectionPos];
+  const section = currentSections[sIdx];
+  const isLast = currentSectionPos === currentSectionQueue.length - 1;
+
+  document.getElementById('testHeader').textContent = `${currentTest.title} — ${currentEntry.studentName}`;
+  document.getElementById('sectionProgress').textContent =
+    `${sectionIcon(section.type)} ${section.title || sectionDefaultTitle(section.type)} · раздел ${currentSectionPos+1} из ${currentSectionQueue.length}`;
+
+  const qWrap = document.getElementById('testQuestions');
+  const nextBtn = document.getElementById('sectionNextBtn');
+  nextBtn.disabled = false;
+  nextBtn.textContent = isLast ? 'Завершить тест' : 'Далее';
+  window.onbeforeunload = null;
+
+  if(section.type === 'grammar' || section.type === 'vocabulary'){
+    const localAnswers = new Array(section.questions.length).fill(null);
+    qWrap.innerHTML = section.questions.map((q,qi)=>`
+      <div class="q-block">
+        <div class="q-title">${qi+1}. ${q.q}</div>
+        ${q.options.map((opt,oi)=>`
+          <label class="opt">
+            <input type="radio" name="sq${qi}" value="${oi}" onchange="__sectionLocalAnswers[${qi}]=${oi}">
+            ${opt}
+          </label>
+        `).join('')}
+      </div>
+    `).join('');
+    window.__sectionLocalAnswers = localAnswers;
+    nextBtn.onclick = ()=>advanceSection({ type: section.type, answers: window.__sectionLocalAnswers });
+
+  } else if(section.type === 'reading'){
+    const localAnswers = new Array(section.questions.length).fill(null);
+    qWrap.innerHTML = `
+      <div class="reading-layout">
+        <div class="reading-text-panel">${escapeHtmlAttr(section.text)}</div>
+        <div>
+          ${section.questions.map((q,qi)=>`
+            <div class="q-block">
+              <div class="q-title">${qi+1}. ${q.q}</div>
+              ${q.options.map((opt,oi)=>`
+                <label class="opt">
+                  <input type="radio" name="rq${qi}" value="${oi}" onchange="__sectionLocalAnswers[${qi}]=${oi}">
+                  ${opt}
+                </label>
+              `).join('')}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    window.__sectionLocalAnswers = localAnswers;
+    nextBtn.onclick = ()=>advanceSection({ type: section.type, answers: window.__sectionLocalAnswers });
+
+  } else if(section.type === 'writing'){
+    const draftKey = 'writingDraft_'+currentCode+'_'+sIdx;
+    let savedDraft = '';
+    try{ savedDraft = sessionStorage.getItem(draftKey) || ''; }catch(err){}
+    qWrap.innerHTML = `
+      <div class="q-block">
+        <div class="q-title" style="white-space:pre-wrap;">${escapeHtmlAttr(section.prompt)}</div>
+        <textarea id="writingAnswerInput" class="writing-textarea" placeholder="Введите ответ здесь…">${escapeHtmlAttr(savedDraft)}</textarea>
+        <div id="writingWordCountBadge" class="word-count-badge">0 слов</div>
+      </div>
+    `;
+    const textarea = document.getElementById('writingAnswerInput');
+    const badge = document.getElementById('writingWordCountBadge');
+    const updateCount = ()=>{
+      const words = textarea.value.trim().split(/\s+/).filter(Boolean);
+      const count = words.length;
+      const within = count >= section.minWords && count <= section.maxWords;
+      badge.textContent = `${count} слов (нужно ${section.minWords}–${section.maxWords})`;
+      badge.className = 'word-count-badge ' + (count===0 ? '' : (within ? 'ok' : 'bad'));
+      try{ sessionStorage.setItem(draftKey, textarea.value); }catch(err){}
+      return {count, within};
+    };
+    textarea.addEventListener('input', updateCount);
+    updateCount();
+    window.onbeforeunload = function(){ return 'У вас есть незавершённое письменное задание. Точно уйти со страницы?'; };
+
+    nextBtn.onclick = ()=>{
+      const {count, within} = updateCount();
+      if(count === 0){
+        if(!confirm('Вы ничего не написали. Продолжить без ответа?')) return;
+      } else if(!within){
+        if(!confirm(`Количество слов вне лимита (${section.minWords}–${section.maxWords}). Продолжить всё равно?`)) return;
+      }
+      try{ sessionStorage.removeItem(draftKey); }catch(err){}
+      window.onbeforeunload = null;
+      advanceSection({ type:'writing', text: textarea.value.trim(), wordCount: count, withinLimits: within });
+    };
+  }
+}
+
+function advanceSection(answerRecord){
+  sectionAnswers[currentSectionPos] = answerRecord;
+  if(currentSectionPos < currentSectionQueue.length - 1){
+    currentSectionPos++;
+    renderCurrentSection();
+    window.scrollTo({top:0, behavior:'smooth'});
+  } else {
+    finishTest();
+  }
+}
+
+async function finishTest(){
+  const nextBtn = document.getElementById('sectionNextBtn');
+  nextBtn.disabled = true; nextBtn.textContent = 'Отправляю…';
+  try{
+    let score = 0, total = 0;
+    const richSections = currentSectionQueue.map((sIdx, pos)=>{
+      const section = currentSections[sIdx];
+      const record = sectionAnswers[pos];
+      if(section.type === 'writing'){
+        return { sectionIndex: sIdx, type:'writing', title: section.title,
+          text: record.text, wordCount: record.wordCount, withinLimits: record.withinLimits };
+      }
+      const answers = record.answers;
+      let sectionScore = 0;
+      section.questions.forEach((q,qi)=>{ if(answers[qi]===q.correct) sectionScore++; });
+      score += sectionScore; total += section.questions.length;
+      return { sectionIndex: sIdx, type: section.type, title: section.title, answers, score: sectionScore, total: section.questions.length };
+    });
+
+    const hasWriting = richSections.some(s=>s.type==='writing');
+    const updateData = {
+      status: 'done',
+      sectionAnswers: richSections,
+      score, total,
+      needsReview: hasWriting,
+      completedAt: new Date().toISOString()
+    };
+    if(FIREBASE_CONFIGURED && auth.currentUser){
+      updateData.studentUid = auth.currentUser.uid;
+    }
+    await updateCode(currentCode, updateData);
+
+    document.getElementById('student-test').classList.add('hidden');
+    const resPanel = document.getElementById('student-result');
+    resPanel.classList.remove('hidden');
+    const hasAutoGraded = total > 0;
+    const good = hasAutoGraded ? (score/total >= 0.6) : true;
+    resPanel.innerHTML = `
+      <div class="result-banner ${good?'good':'bad'}">
+        <div>${currentEntry.studentName}, тест завершён</div>
+        ${hasAutoGraded ? `<div class="big">${score} / ${total}</div>` : `<div class="big">Готово</div>`}
+        ${hasWriting ? `<div>Письменная часть будет проверена репетитором.</div>` : ''}
+        <div>Результаты отправлены вашему репетитору.</div>
+      </div>
+      <button class="secondary" onclick="goHome()">Готово</button>
+    `;
+    showToast('Тест отправлен репетитору');
+  } catch(e3){
+    showToast('Не удалось отправить результат. Проверьте интернет-соединение.', 'error');
+    nextBtn.disabled = false; nextBtn.textContent = 'Завершить тест';
+  }
+}
+
+/* init */
+/* ---------------------------------------------------------
+   ТЕМА (светлая/тёмная) — общая настройка для всех посетителей
+--------------------------------------------------------- */
+function applyTheme(theme){
+  if(theme === 'light'){
+    document.documentElement.setAttribute('data-theme','light');
+    document.getElementById('themeToggleBtn').textContent = '☀️';
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    document.getElementById('themeToggleBtn').textContent = '🌙';
+  }
+  try{ localStorage.setItem('siteTheme', theme); } catch(e){}
+}
+function toggleTheme(){
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  applyTheme(isLight ? 'dark' : 'light');
+}
+
+/* init */
+try{ applyTheme(localStorage.getItem('siteTheme') || 'dark'); } catch(e){}
+goHome();
+loadPublicTestsCount();
+</script>
+</body>
+</html>
