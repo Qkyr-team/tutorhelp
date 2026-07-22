@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="yandex-verification" content="e4eed920ebac8e83" />
 <title>Кабинет репетитора</title>
 <style>
   :root{
@@ -738,6 +739,16 @@
                 </div>
 
                 <div class="info-row" id="testInfoRow"></div>
+
+                <div id="teacherSectionPickerWrap" class="hidden">
+                  <label>Разделы теста</label>
+                  <p class="step-hint">Выберите, какие разделы получит ученик по этому коду</p>
+                  <div class="section-all-toggle">
+                    <input type="checkbox" id="tAllSections" checked onchange="toggleAllTeacherSectionCards()">
+                    <label for="tAllSections" style="text-transform:none;font-size:13.5px;margin:0;">Все разделы</label>
+                  </div>
+                  <div class="section-cards" id="teacherSectionCardsWrap"></div>
+                </div>
 
                 <div class="step-card">
                   <div class="step-card-icon">👤</div>
@@ -1558,6 +1569,7 @@ async function updateTeacherTestInfo(){
   if(topicInput) topicInput.value = test && test.topic ? test.topic : '';
   if(!test){
     if(infoRow) infoRow.innerHTML = '';
+    renderTeacherSectionPicker(null);
     updateTeacherSummary();
     return;
   }
@@ -1581,7 +1593,54 @@ async function updateTeacherTestInfo(){
       <div class="info-item"><b>${avgText}</b><span>средний результат</span></div>
     `;
   }
+  renderTeacherSectionPicker(test);
   updateTeacherSummary();
+}
+
+function renderTeacherSectionPicker(test){
+  const wrap = document.getElementById('teacherSectionPickerWrap');
+  const cardsWrap = document.getElementById('teacherSectionCardsWrap');
+  if(!test){
+    wrap.classList.add('hidden');
+    cardsWrap.innerHTML = '';
+    return;
+  }
+  const sections = getTestSections(test);
+  if(sections.length <= 1){
+    wrap.classList.add('hidden');
+    cardsWrap.innerHTML = '';
+    return;
+  }
+  wrap.classList.remove('hidden');
+  document.getElementById('tAllSections').checked = true;
+  cardsWrap.innerHTML = sections.map((s,idx)=>{
+    const qCount = sectionQuestionCount(s);
+    const desc = s.type === 'writing' ? `${s.minWords}–${s.maxWords} слов` : `${qCount} вопрос(ов)`;
+    return `
+      <div class="section-card selected" data-section-idx="${idx}" onclick="toggleTeacherSectionCard(${idx})">
+        <div class="sc-icon">${sectionIcon(s.type)}</div>
+        <div class="sc-title">${escapeHtmlAttr(s.title || sectionDefaultTitle(s.type))}</div>
+        <div class="sc-desc">${desc}</div>
+      </div>`;
+  }).join('');
+}
+
+function toggleTeacherSectionCard(idx){
+  const card = document.querySelector(`#teacherSectionCardsWrap .section-card[data-section-idx="${idx}"]`);
+  if(card) card.classList.toggle('selected');
+  const cards = document.querySelectorAll('#teacherSectionCardsWrap .section-card');
+  document.getElementById('tAllSections').checked = Array.from(cards).every(c=>c.classList.contains('selected'));
+}
+function toggleAllTeacherSectionCards(){
+  const checked = document.getElementById('tAllSections').checked;
+  document.querySelectorAll('#teacherSectionCardsWrap .section-card').forEach(c=>c.classList.toggle('selected', checked));
+}
+function getSelectedTeacherSections(test){
+  const sections = getTestSections(test);
+  if(sections.length <= 1) return sections.map((_,idx)=>idx);
+  const selected = Array.from(document.querySelectorAll('#teacherSectionCardsWrap .section-card.selected'))
+    .map(c=>parseInt(c.dataset.sectionIdx,10));
+  return selected.length ? selected : sections.map((_,idx)=>idx);
 }
 
 function updateTeacherSummary(){
@@ -2278,12 +2337,14 @@ async function createCode(){
   try{
     const test = findTest(testId);
     const sections = getTestSections(test);
+    const selectedSections = getSelectedTeacherSections(test);
+    const total = countAutoGradedQuestions(selectedSections.map(idx=>sections[idx]));
     const code = await generateUniqueCode();
     await saveCode(code, {
       code, studentName: name, testId, testTitle: test.title,
       testBook: test.book || null, testLevel: test.level || null, testTopic: test.topic || null,
-      teacherId: auth.currentUser.uid,
-      status: 'pending', answers: null, score: null, total: countAutoGradedQuestions(sections),
+      teacherId: auth.currentUser.uid, selectedSections,
+      status: 'pending', answers: null, score: null, total,
       createdAt: new Date().toISOString(), completedAt: null
     });
     document.getElementById('codeValue').textContent = code;
@@ -2611,11 +2672,10 @@ async function startTestByCode(){
     currentTest = test;
     currentSections = getTestSections(test);
 
-    if(currentSections.length > 1){
-      renderSectionPicker();
-    } else {
-      beginSectionFlow([0]);
-    }
+    const indices = Array.isArray(entry.selectedSections) && entry.selectedSections.length
+      ? entry.selectedSections
+      : currentSections.map((_,idx)=>idx);
+    beginSectionFlow(indices);
   } catch(e2){
     err.textContent = 'Не удалось проверить код. Проверьте интернет-соединение и попробуйте снова.';
   } finally{
