@@ -232,6 +232,13 @@
   .result-banner .big{font-family:var(--serif);font-size:38px;margin:6px 0;}
 
   .cert-student-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:12px;}
+  .field-error{border-color:var(--red) !important;box-shadow:0 0 0 1px var(--red);}
+  .student-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:16px;}
+  .student-card-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;}
+  .student-card-name{font-family:var(--serif);font-size:17px;}
+  .student-card-meta{font-size:12.5px;color:var(--ink-dim);}
+  .student-card-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;}
+  .student-tab-content{margin-top:12px;}
   .cert-student-card h4{margin:0 0 10px;font-family:var(--serif);font-size:16px;}
   .cert-test-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--border);font-size:13.5px;}
   .cert-test-row:first-of-type{border-top:none;}
@@ -791,7 +798,81 @@
           <!-- Students -->
           <div id="teacher-students" class="hidden">
             <h2 class="dash-title">Мои ученики</h2>
-            <div id="teacherStudentsWrap"></div>
+            <button class="primary" onclick="toggleStudentForm()">➕ Добавить ученика</button>
+
+            <div id="studentFormWrap" class="panel hidden" style="margin-top:16px;">
+              <h3 id="studentFormTitle" style="font-family:var(--serif);margin:0 0 14px;">Новый ученик</h3>
+
+              <label>Имя*</label>
+              <input type="text" id="studentFirstName" placeholder="Александр">
+              <label>Фамилия*</label>
+              <input type="text" id="studentLastName" placeholder="Петров">
+              <label>Класс</label>
+              <input type="text" id="studentGrade" placeholder="Например: 7">
+              <label>Родной язык</label>
+              <input type="text" id="studentNativeLang" placeholder="Например: русский">
+
+              <label>Цель обучения</label>
+              <select id="studentGoal">
+                <option value="">—</option>
+                <option>Подготовка к ОГЭ</option>
+                <option>Подготовка к ЕГЭ</option>
+                <option>Школьная программа</option>
+                <option>Разговорный английский</option>
+                <option>IELTS</option>
+                <option>TOEFL</option>
+                <option>Другое</option>
+              </select>
+
+              <h4 style="font-family:var(--serif);font-size:14px;margin:18px 0 4px;">Контакты ученика</h4>
+              <label>Телефон</label>
+              <input type="text" id="studentPhone" placeholder="+7 ...">
+              <label>Email</label>
+              <input type="text" id="studentEmail" placeholder="student@example.com">
+
+              <h4 style="font-family:var(--serif);font-size:14px;margin:18px 0 4px;">Контакты родителя</h4>
+              <label>Имя родителя</label>
+              <input type="text" id="parentName" placeholder="Имя Фамилия">
+              <label>Телефон родителя</label>
+              <input type="text" id="parentPhone" placeholder="+7 ...">
+              <label>Email родителя</label>
+              <input type="text" id="parentEmail" placeholder="parent@example.com">
+
+              <h4 style="font-family:var(--serif);font-size:14px;margin:18px 0 4px;">Информация об обучении</h4>
+              <label>Текущий уровень</label>
+              <select id="studentLevel">
+                <option value="">—</option>
+                <option>A0</option><option>A1</option><option>A2</option>
+                <option>B1</option><option>B2</option><option>C1</option><option>C2</option>
+              </select>
+              <label>Учебник</label>
+              <input type="text" id="studentTextbook" placeholder="Например: Speak out">
+              <label>Частота занятий</label>
+              <select id="studentFrequency">
+                <option value="">—</option>
+                <option>1 раз в неделю</option>
+                <option>2 раза в неделю</option>
+                <option>3 раза в неделю</option>
+                <option>Своя</option>
+              </select>
+              <label>Продолжительность урока</label>
+              <select id="studentDuration">
+                <option value="">—</option>
+                <option>30 минут</option><option>45 минут</option><option>60 минут</option><option>90 минут</option>
+              </select>
+
+              <label>Заметки</label>
+              <textarea id="studentNotes" rows="4" placeholder="Например: часто путает времена, любит игровые задания…"
+                style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--ink);border-radius:7px;padding:10px;font-family:var(--sans);font-size:14px;"></textarea>
+
+              <div style="margin-top:16px;">
+                <button class="secondary" onclick="cancelStudentForm()">Отмена</button>
+                <button class="primary" onclick="saveStudentCard()">Сохранить ученика</button>
+              </div>
+              <p class="hint" id="studentFormError"></p>
+            </div>
+
+            <div id="studentCardsWrap" style="margin-top:20px;"></div>
           </div>
 
           <!-- Account -->
@@ -1435,7 +1516,7 @@ function setTeacherTab(tab){
   if(tab==='create') populateTestSelect();
   if(tab==='results') renderResultsTable();
   if(tab==='certs') renderCertificatesPanel();
-  if(tab==='students') loadTeacherStudentsList();
+  if(tab==='students') loadStudentCards();
   if(tab==='account') loadAccountSettings();
   if(tab==='admin') setAdminSubTab('dashboard');
 }
@@ -1490,26 +1571,230 @@ async function changeAccountPassword(){
   }
 }
 
-async function loadTeacherStudentsList(){
-  const wrap = document.getElementById('teacherStudentsWrap');
+let editingStudentId = null;
+let cachedStudentCards = [];
+
+function toggleStudentForm(){
+  const wrap = document.getElementById('studentFormWrap');
+  const wasHidden = wrap.classList.contains('hidden');
+  if(wasHidden){
+    clearStudentForm();
+    wrap.classList.remove('hidden');
+  } else {
+    wrap.classList.add('hidden');
+  }
+}
+
+function clearStudentForm(){
+  editingStudentId = null;
+  document.getElementById('studentFormTitle').textContent = 'Новый ученик';
+  ['studentFirstName','studentLastName','studentGrade','studentNativeLang','studentPhone','studentEmail',
+   'parentName','parentPhone','parentEmail','studentTextbook'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.value = '';
+    el.classList.remove('field-error');
+  });
+  document.getElementById('studentGoal').value = '';
+  document.getElementById('studentLevel').value = '';
+  document.getElementById('studentFrequency').value = '';
+  document.getElementById('studentDuration').value = '';
+  document.getElementById('studentNotes').value = '';
+  document.getElementById('studentFormError').textContent = '';
+}
+
+function cancelStudentForm(){
+  document.getElementById('studentFormWrap').classList.add('hidden');
+  clearStudentForm();
+}
+
+async function saveStudentCard(){
+  const firstNameEl = document.getElementById('studentFirstName');
+  const lastNameEl = document.getElementById('studentLastName');
+  const firstName = firstNameEl.value.trim();
+  const lastName = lastNameEl.value.trim();
+  const errEl = document.getElementById('studentFormError');
+  errEl.textContent = '';
+  firstNameEl.classList.remove('field-error');
+  lastNameEl.classList.remove('field-error');
+
+  if(!firstName || !lastName){
+    if(!firstName) firstNameEl.classList.add('field-error');
+    if(!lastName) lastNameEl.classList.add('field-error');
+    errEl.textContent = 'Заполните обязательные поля.';
+    return;
+  }
+
+  const data = {
+    firstName, lastName,
+    grade: document.getElementById('studentGrade').value.trim(),
+    nativeLang: document.getElementById('studentNativeLang').value.trim(),
+    goal: document.getElementById('studentGoal').value,
+    studentPhone: document.getElementById('studentPhone').value.trim(),
+    studentEmail: document.getElementById('studentEmail').value.trim(),
+    parentName: document.getElementById('parentName').value.trim(),
+    parentPhone: document.getElementById('parentPhone').value.trim(),
+    parentEmail: document.getElementById('parentEmail').value.trim(),
+    level: document.getElementById('studentLevel').value,
+    textbook: document.getElementById('studentTextbook').value.trim(),
+    frequency: document.getElementById('studentFrequency').value,
+    duration: document.getElementById('studentDuration').value,
+    notes: document.getElementById('studentNotes').value.trim(),
+    teacherId: auth.currentUser.uid
+  };
+
+  try{
+    if(editingStudentId){
+      await db.collection('students').doc(editingStudentId).update(data);
+    } else {
+      data.createdAt = new Date().toISOString();
+      await db.collection('students').add(data);
+    }
+    cancelStudentForm();
+    await loadStudentCards();
+    showToast('Ученик успешно добавлен');
+  } catch(err){
+    errEl.textContent = 'Не удалось сохранить: ' + err.message;
+  }
+}
+
+async function loadStudentCards(){
+  const wrap = document.getElementById('studentCardsWrap');
   wrap.innerHTML = '<p class="empty-note">Загрузка…</p>';
   try{
-    const entries = await fetchAllCodes();
-    cachedEntries = entries;
-    const byStudent = {};
-    entries.forEach(e=>{ (byStudent[e.studentName] = byStudent[e.studentName] || []).push(e); });
-    const names = Object.keys(byStudent);
-    if(!names.length){ wrap.innerHTML = '<p class="empty-note">Пока нет учеников.</p>'; return; }
-    wrap.innerHTML = names.map(name=>{
-      const list = byStudent[name];
-      const done = list.filter(e=>e.status==='done');
-      const avg = done.length ? Math.round(done.reduce((s,e)=>s+(e.score/e.total),0)/done.length*100) : null;
-      return `<div class="cert-student-card"><h4>${name}</h4>
-        <div class="cert-test-row"><span>Тестов пройдено: ${done.length} из ${list.length}</span><span>${avg!=null ? 'Средний балл: '+avg+'%' : ''}</span></div>
-      </div>`;
-    }).join('');
+    const snap = await db.collection('students').where('teacherId','==',auth.currentUser.uid).get();
+    cachedStudentCards = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderStudentCards();
   } catch(err){
-    wrap.innerHTML = '<p class="empty-note">Не удалось загрузить список.</p>';
+    wrap.innerHTML = '<p class="empty-note">Не удалось загрузить учеников.</p>';
+  }
+}
+
+function renderStudentCards(){
+  const wrap = document.getElementById('studentCardsWrap');
+  if(!cachedStudentCards.length){
+    wrap.innerHTML = '<p class="empty-note">Пока нет ни одной карточки ученика.</p>';
+    return;
+  }
+  wrap.innerHTML = cachedStudentCards.map(s=>{
+    const meta = [s.level, s.grade ? 'класс '+s.grade : ''].filter(Boolean).join(' · ') || '—';
+    return `
+    <div class="student-card">
+      <div class="student-card-head">
+        <div>
+          <div class="student-card-name">${escapeHtmlAttr(s.firstName)} ${escapeHtmlAttr(s.lastName)}</div>
+          <div class="student-card-meta">${meta} · Следующий урок: не назначен</div>
+        </div>
+      </div>
+      <div class="student-card-tabs">
+        <button class="secondary small" onclick="toggleStudentTab('${s.id}','lessons')">📅 История уроков</button>
+        <button class="secondary small" onclick="toggleStudentTab('${s.id}','homework')">📚 Домашние задания</button>
+        <button class="secondary small" onclick="toggleStudentTab('${s.id}','progress')">📊 Прогресс</button>
+        <button class="secondary small" onclick="toggleStudentTab('${s.id}','notes')">📝 Заметки</button>
+        <button class="secondary small" onclick="editStudentCard('${s.id}')">⚙️ Редактировать</button>
+        <button class="secondary small" onclick="deleteStudentCard('${s.id}')">🗑 Удалить</button>
+      </div>
+      <div class="student-tab-content hidden" id="studentTab_${s.id}" data-open-tab=""></div>
+    </div>`;
+  }).join('');
+}
+
+function toggleStudentTab(id, tab){
+  const el = document.getElementById('studentTab_'+id);
+  const alreadyOpen = el.dataset.openTab === tab && !el.classList.contains('hidden');
+  el.classList.add('hidden');
+  el.innerHTML = '';
+  el.dataset.openTab = '';
+  if(alreadyOpen) return;
+
+  el.dataset.openTab = tab;
+  el.classList.remove('hidden');
+  const student = cachedStudentCards.find(s=>s.id===id);
+  if(!student) return;
+
+  if(tab === 'notes'){
+    el.innerHTML = `
+      <textarea id="notesEdit_${id}" rows="4" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--ink);border-radius:7px;padding:10px;">${escapeHtmlAttr(student.notes||'')}</textarea>
+      <button class="secondary small" style="margin-top:8px;" onclick="saveStudentNotes('${id}')">Сохранить заметки</button>
+    `;
+    return;
+  }
+  if(tab === 'homework'){
+    el.innerHTML = '<p class="hint">Отдельный трекер домашних заданий пока не реализован — используйте вкладку «Заметки», чтобы фиксировать, что задано.</p>';
+    return;
+  }
+
+  el.innerHTML = '<p class="empty-note">Загрузка…</p>';
+  fetchAllCodes().then(entries=>{
+    const fullName = `${student.firstName} ${student.lastName}`.trim().toLowerCase();
+    const matched = entries.filter(e=>(e.studentName||'').trim().toLowerCase() === fullName);
+    if(tab === 'lessons'){
+      if(!matched.length){
+        el.innerHTML = '<p class="empty-note">Пока нет кодов с именем, точно совпадающим с этой карточкой.</p>';
+        return;
+      }
+      el.innerHTML = matched.map(e=>`
+        <div class="cert-test-row"><span>${e.testTitle}</span><span>${e.status==='done' ? (e.score+' / '+e.total) : 'ожидание'}</span></div>
+      `).join('');
+    } else if(tab === 'progress'){
+      const done = matched.filter(e=>e.status==='done' && e.total>0);
+      if(!done.length){
+        el.innerHTML = '<p class="empty-note">Пока нет пройденных тестов с точным совпадением имени.</p>';
+        return;
+      }
+      const avg = Math.round(done.reduce((sum,e)=>sum+(e.score/e.total),0)/done.length*100);
+      el.innerHTML = `
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-num">${done.length}</div><div class="stat-label">тестов пройдено</div></div>
+          <div class="stat-card"><div class="stat-num">${avg}%</div><div class="stat-label">средний результат</div></div>
+        </div>`;
+    }
+  }).catch(()=>{ el.innerHTML = '<p class="empty-note">Не удалось загрузить данные.</p>'; });
+}
+
+async function saveStudentNotes(id){
+  const val = document.getElementById('notesEdit_'+id).value;
+  try{
+    await db.collection('students').doc(id).update({notes: val});
+    const s = cachedStudentCards.find(x=>x.id===id);
+    if(s) s.notes = val;
+    showToast('Заметки сохранены');
+  } catch(err){
+    showToast('Не удалось сохранить заметки: ' + err.message, 'error');
+  }
+}
+
+function editStudentCard(id){
+  const s = cachedStudentCards.find(x=>x.id===id);
+  if(!s) return;
+  editingStudentId = id;
+  document.getElementById('studentFormWrap').classList.remove('hidden');
+  document.getElementById('studentFormTitle').textContent = 'Редактирование ученика';
+  document.getElementById('studentFirstName').value = s.firstName || '';
+  document.getElementById('studentLastName').value = s.lastName || '';
+  document.getElementById('studentGrade').value = s.grade || '';
+  document.getElementById('studentNativeLang').value = s.nativeLang || '';
+  document.getElementById('studentGoal').value = s.goal || '';
+  document.getElementById('studentPhone').value = s.studentPhone || '';
+  document.getElementById('studentEmail').value = s.studentEmail || '';
+  document.getElementById('parentName').value = s.parentName || '';
+  document.getElementById('parentPhone').value = s.parentPhone || '';
+  document.getElementById('parentEmail').value = s.parentEmail || '';
+  document.getElementById('studentLevel').value = s.level || '';
+  document.getElementById('studentTextbook').value = s.textbook || '';
+  document.getElementById('studentFrequency').value = s.frequency || '';
+  document.getElementById('studentDuration').value = s.duration || '';
+  document.getElementById('studentNotes').value = s.notes || '';
+  document.getElementById('studentFormWrap').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+async function deleteStudentCard(id){
+  if(!confirm('Удалить карточку ученика? Это действие нельзя отменить.')) return;
+  try{
+    await db.collection('students').doc(id).delete();
+    await loadStudentCards();
+    showToast('Ученик удалён');
+  } catch(err){
+    showToast('Не удалось удалить: ' + err.message, 'error');
   }
 }
 
